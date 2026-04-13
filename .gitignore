@@ -1,0 +1,10 @@
+node_modules
+.env
+serviceAccountKey.json
+config.json
+logs
+./logs/app.log
+./logs/error.log
+uploads
+.codex
+postman
