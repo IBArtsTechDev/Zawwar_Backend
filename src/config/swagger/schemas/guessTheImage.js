@@ -18,65 +18,54 @@ const guessTheImageSchemas = {
     }
   },
   GuessTheImageRecord: {
-    type: "object",
-    properties: {
-      gameid: {
-        type: "integer",
-        example: 1
-      },
-      gameId: {
-        type: "integer",
-        nullable: true,
-        example: 1
-      },
-      level: {
-        type: "integer",
-        example: 1
-      },
-      gameImage: {
-        type: "string",
-        nullable: true,
-        example: "mabcd-12345.png"
-      },
-      word: {
-        type: "string",
-        nullable: true,
-        example: "CAT"
-      },
-      noOfPlays: {
-        type: "integer",
-        example: 0
-      },
-      total_plays: {
-        type: "integer",
-        example: 12
-      },
-      totalPlays: {
-        type: "integer",
-        nullable: true,
-        example: 12
-      },
-      isGujrati: {
-        type: "boolean",
-        example: false
-      },
-      translations: {
-        type: "array",
-        items: {
-          $ref: "#/components/schemas/GuessTheImageTranslationRecord"
-        }
-      },
-      createdAt: {
-        type: "string",
-        format: "date-time",
-        example: "2026-04-08T10:00:00.000Z"
-      },
-      updatedAt: {
-        type: "string",
-        format: "date-time",
-        example: "2026-04-08T10:00:00.000Z"
+      type: "object",
+      properties: {
+          gameId: {
+              type: "integer",
+              nullable: true,
+              example: 1
+          },
+          gameImage: {
+              type: "string",
+              nullable: true,
+              example: "mnwzsymt-z1z83.png"
+          },
+          level: {
+              type: "integer",
+              example: 1
+          },
+          totalPlays: {
+              type: "integer",
+              nullable: true,
+              example: 0
+          },
+          languages: {
+              type: "object",
+              properties: {
+                  English: {
+                      $ref: "#/components/schemas/GuessTheImageLanguageData"
+                  },
+                  Gujarati: {
+                      $ref: "#/components/schemas/GuessTheImageLanguageData"
+                  }
+              }
+          }
       }
-    }
+  },
+
+  GuessTheImageLanguageData: {
+      type: "object",
+      properties: {
+          word: {
+              type: "string",
+              example: "CAT"
+          },
+          translationImage: {
+              type: "string",
+              nullable: true,
+              example: "mnwzsymt-z1z83.png"
+          }
+      }
   },
   GuessTheImageCreateRequest: {
     type: "object",

@@ -362,7 +362,28 @@ const fetchGuessWord = asyncHandler(async (query) => {
     return result;
 });
 
+const createJumbledWord = (wordArray, lang,length) => {
+    const shuffleArray = (array) => {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    };
+    const letters = lang === 'English'
+        ? wordArray.map(l => l.toUpperCase())
+        : wordArray;
 
+    const randomLetters = lang === 'Gujarati'
+        ? 'અઆઇઈઉઊઋએઐઔકગછટઠડઢતદધફબયરલવશષસ'
+        : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+    const extraCount = Math.max(0, length - letters.length); // Always make total = 9
+    const extraLetters = Array.from({ length: extraCount }, () =>
+        randomLetters[Math.floor(Math.random() * randomLetters.length)]
+    );
+    return shuffleArray([...letters, ...extraLetters]);
+};
 
 
 const playGuessWord = asyncHandler(async (query) => {
@@ -435,21 +456,42 @@ const playGuessWord = asyncHandler(async (query) => {
     }, {});
 
     // Prepare formatted data with both languages nested
-    const formattedData = words.map(wordEntry => {
-        const gameTranslations = translationsByGameId[wordEntry.gameId] || {};
+   const formattedData = words.map(wordEntry => {
+    const gameTranslations = translationsByGameId[wordEntry.gameId] || {};
 
-        return {
-            gameId: wordEntry.gameId,
-            level: wordEntry.level,
-            correct_image: wordEntry.correct_Image,
-            seconds: wordEntry.time || 15,
-            images: imagesByGameId[wordEntry.gameId] || [],
-            words: {
-                English: gameTranslations['English'] || wordEntry.word,   // fallback to base word
-                Gujarati: gameTranslations['Gujarati'] || null             // null if not available
-            }
-        };
-    });
+    const englishWord = gameTranslations['English'] || wordEntry.word;
+    const gujaratiWord = gameTranslations['Gujarati'] || null;
+
+    const englishClean = englishWord.replace(/[^A-Za-z]/g, '').toUpperCase();
+    const englishArray = englishClean.split('');
+
+    const gujaratiClean = gujaratiWord ? gujaratiWord.replace(/[^અ-હ઼-ૐ]/g, '') : '';
+    const gujaratiArray = gujaratiClean.split('');
+
+    return {
+        gameId: wordEntry.gameId,
+        level: wordEntry.level,
+        correct_image: wordEntry.correct_Image,
+        seconds: wordEntry.time || 15,
+        images: imagesByGameId[wordEntry.gameId] || [],
+        words: {
+            English: {
+                word: englishClean,
+                jumbledWord: createJumbledWord(englishArray, 'English', 12),
+                jumbledWordCount: 12
+            },
+            Gujarati: gujaratiWord ? {
+                word: gujaratiWord,
+                jumbledWord: createJumbledWord(
+                    gujaratiArray,
+                    'Gujarati',
+                    12
+                ),
+                jumbledWordCount: 12
+            } : null
+        }
+    };
+});
 
     // Create activity records
     const activityPromises = formattedData.map(game =>

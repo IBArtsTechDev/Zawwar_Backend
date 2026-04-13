@@ -45,16 +45,10 @@ import file_upload from "../utlis/file_upload.js";
  *     security:
  *       - bearerAuth: []
  *     description: >
- *       Calls `services/play/guessTheImage.playWord()`. Supported `lang` values are `en`, `guj`, and `es`.
+ *       Calls `services/play/guessTheImage.playWord()`. Supported `lang` values are `en`, `gu`.
  *       The service excludes already-correct games for the user, localizes the word, generates a jumbled letter set,
  *       and records a play activity.
  *     parameters:
- *       - in: query
- *         name: lang
- *         required: true
- *         schema:
- *           type: string
- *           enum: [en, guj, es]
  *       - in: query
  *         name: userId
  *         required: true
@@ -139,20 +133,13 @@ router.delete('/guess-the-image',auth.verifyToken,wordControler.deleteWord);
 
 /**
  * @swagger
- * /play/guess-the-images:
+ * /play/word/guess-the-images:
  *   get:
  *     summary: Fetch all guess-the-image games with translations
  *     tags: [GuessTheImage]
  *     security:
  *       - bearerAuth: []
  *     description: Calls `services/play/guessTheImage.fetchWords()`. Optional `lang` filter supports `en` and `guj`.
- *     parameters:
- *       - in: query
- *         name: lang
- *         required: false
- *         schema:
- *           type: string
- *           enum: [en, guj]
  *     responses:
  *       200:
  *         description: Games fetched successfully

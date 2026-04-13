@@ -131,91 +131,65 @@ const updateWord = asyncHandler(async (body, files) => {
 
 
 const playWord = asyncHandler(async (query) => {
-    const { lang, userId, page = 1, limit = 30 } = query;
+    const { userId, page = 1, limit = 30 } = query;
     const pageSize = parseInt(limit, 10);
     const currentPage = parseInt(page, 10);
-
-    // Mapping of language short codes to full language names
-    const langCodeMap = {
-        'en': 'English',
-        'guj': 'Gujarati',
-        'es': 'Spanish' // Add more languages if needed
-    };
-
-    // Validate and get full language name
-    const fullLang = langCodeMap[lang?.toLowerCase()];
-    if (!fullLang) {
-        throw new ErrorResponse(`Invalid language parameter. Choose one of: ${Object.keys(langCodeMap).join(', ')}`, 400);
-    }
-
     const offset = (currentPage - 1) * pageSize;
 
-    // Start a transaction for atomic operations
     const transaction = await db.sequelize.transaction();
     try {
-        // Fetch the answered questions by the user to exclude them from the next set of questions.
+        // Fetch answered questions to exclude
         const answeredQuestions = await db.gameAnswer.findAll({
             attributes: ['gameId'],
-            where: {
-                userId,
-                isCorrect: true,
-                type: 'Guess-the-image'
-            },
+            where: { userId, isCorrect: true, type: 'Guess-the-image' },
             transaction,
             raw: true
         });
 
-        const answeredQuestionIds = answeredQuestions.map(answer => answer.gameId).filter(id => id !== undefined && id !== null);
+        const answeredQuestionIds = answeredQuestions
+            .map(a => a.gameId)
+            .filter(id => id !== undefined && id !== null);
 
-        // Define language-specific conditions
-        const includeCondition = fullLang === 'Gujarati' ? { isGujarati: true } : { isGujarati: false };
+        const excludeIds = answeredQuestionIds.length > 0 ? answeredQuestionIds : [0];
 
-        // Fetch total count of questions excluding those already answered.
+        // Total count excluding answered
         const totalQuestions = await db.guessWord.count({
-            where: {
-                gameId: { [Op.notIn]: answeredQuestionIds.length > 0 ? answeredQuestionIds : [0] } // Prevent empty array issue
-            },
+            where: { gameId: { [Op.notIn]: excludeIds } },
             transaction
         });
 
-        // Fetch the questions for the current page.
+        // Fetch paginated words
         const words = await db.guessWord.findAll({
             attributes: ['gameId', 'gameImage', 'level', 'word'],
-            where: {
-                gameId: { [Op.notIn]: answeredQuestionIds.length > 0 ? answeredQuestionIds : [0] } // Prevent empty array issue
-            },
+            where: { gameId: { [Op.notIn]: excludeIds } },
             limit: pageSize,
-            offset: offset,
+            offset,
             transaction,
-            raw: true // Ensures plain objects
+            raw: true
         });
-        console.log(words, "Fetched Words");
 
         if (!words.length) {
             throw new ErrorResponse('No more questions available', 404);
         }
 
-        // Create a map for translations if the language is not English.
-        let translationsMap = new Map();
-        if (fullLang !== 'English') {
-            const gameIds = words.map(word => word.gameId);
-            const translations = await db.guessWordTranslation.findAll({
-                attributes: ['gameId', 'word'],
-                where: {
-                    gameId: { [Op.in]: gameIds },
-                    language: fullLang
-                },
-                transaction,
-                raw: true
-            });
+        const gameIds = words.map(w => w.gameId);
 
-            // Store translations in a map for easier access.
-            translations.forEach(translation => {
-                translationsMap.set(translation.gameId, translation.word);
-            });
-        }
+        // Fetch ALL translations for all languages in one query
+        const allTranslations = await db.guessWordTranslation.findAll({
+            attributes: ['gameId', 'language', 'word'],
+            where: { gameId: { [Op.in]: gameIds } },
+            transaction,
+            raw: true
+        });
 
-        // Function to shuffle an array.
+        // Map: { gameId -> { English: '...', Gujarati: '...' } }
+        const translationsMap = allTranslations.reduce((acc, t) => {
+            if (!acc[t.gameId]) acc[t.gameId] = {};
+            acc[t.gameId][t.language] = t.word;
+            return acc;
+        }, {});
+
+        // Shuffle helper
         const shuffleArray = (array) => {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -224,56 +198,71 @@ const playWord = asyncHandler(async (query) => {
             return array;
         };
 
-        // Function to process words based on language.
+        // Process word into character array per language
         const processWord = (word, lang) => {
-            if (lang === 'Gujarati') {
-                return processGujaratiText(word);
-            } else if (lang === 'English') {
-                return word.replace(/[^A-Za-z]/g, '').split('');
-            }
-            return word.replace(/\s/g, '').split(''); // Default processing
+            if (lang === 'Gujarati') return processGujaratiText(word);
+            return word.replace(/[^A-Za-z]/g, '').split('');
         };
 
-        // Function to get a jumbled word.
+        // Build jumbled word with extra random letters
         const getJumbledWord = (wordArray, lang) => {
-            const letters = lang === 'English' 
-                ? wordArray.map(letter => letter.toUpperCase()) 
+            const letters = lang === 'English'
+                ? wordArray.map(l => l.toUpperCase())
                 : wordArray;
-            
-            const randomLetters = lang === 'Gujarati' 
-                ? 'અઆઇઈઉઊઋએઐઔકગછટઠડઢતદધફબયરલવશષસ' 
+
+            const randomLetters = lang === 'Gujarati'
+                ? 'અઆઇઈઉઊઋએઐઔકગછટઠડઢતદધફબયરલવશષસ'
                 : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            
-            const extraLetters = Array.from({ length: 5 }, () => randomLetters[Math.floor(Math.random() * randomLetters.length)]);
-            const allLetters = [...letters, ...extraLetters];
-            return shuffleArray(allLetters);
+
+            const extraCount = Math.max(0, 9 - letters.length); // Always make total = 9
+            const extraLetters = Array.from({ length: extraCount }, () =>
+                randomLetters[Math.floor(Math.random() * randomLetters.length)]
+            );
+            return shuffleArray([...letters, ...extraLetters]);
         };
 
-        // Format the data to include jumbled words and the correct image for each question.
-        const formattedData = words.map(wordObj => {
-            if (!wordObj.gameId) {
-                console.warn(`Word object missing gameId: ${JSON.stringify(wordObj)}`);
-                return null; // Exclude this entry
-            }
-            const translationWord = translationsMap.get(wordObj.gameId);
-            const word = fullLang !== 'English' && translationWord ? translationWord : wordObj.word;
-            const image = wordObj.gameImage; // Use the same image for all translations.
-            const cleanWord = word.replace(/[^A-Za-z\u0A80-\u0AFF]/g, '').replace(/\s/g, '');
-            const wordArray = processWord(cleanWord, fullLang);
-            const jumbledWord = getJumbledWord(wordArray, fullLang);
+        // Build language-specific word data
+        const buildWordData = (rawWord, lang) => {
+            const clean = lang === 'Gujarati'
+                ? rawWord.replace(/[^\u0A80-\u0AFF]/g, '').replace(/\s/g, '')
+                : rawWord.replace(/[^A-Za-z]/g, '').replace(/\s/g, '');
+
+            const wordArray = processWord(clean, lang);
+            const jumbledWord = getJumbledWord(wordArray, lang);
+
             return {
-                gameId: wordObj.gameId,
-                gameImage: image,
-                level: wordObj.level,
-                word: cleanWord,
+                word: clean,
                 jumbledWord,
                 jumbledWordCount: jumbledWord.length
             };
-        }).filter(item => item !== null); // Remove null entries
+        };
 
-        console.log(formattedData, "Formatted Data");
+        // Format response with both languages nested
+        const formattedData = words.map(wordObj => {
+            if (!wordObj.gameId) {
+                console.warn(`Word object missing gameId: ${JSON.stringify(wordObj)}`);
+                return null;
+            }
 
-        // Record the activity of the user for the first question.
+            const gameTranslations = translationsMap[wordObj.gameId] || {};
+
+            const englishWord = gameTranslations['English'] || wordObj.word;
+            const gujaratiWord = gameTranslations['Gujarati'] || null;
+
+            return {
+                gameId: wordObj.gameId,
+                gameImage: wordObj.gameImage,
+                level: wordObj.level,
+                languages: {
+                    English: buildWordData(englishWord, 'English'),
+                    ...(gujaratiWord && {
+                        Gujarati: buildWordData(gujaratiWord, 'Gujarati')
+                    })
+                }
+            };
+        }).filter(item => item !== null);
+
+        // Record activity for first game
         if (formattedData.length > 0) {
             await db.activity.create({
                 gameId: formattedData[0].gameId,
@@ -282,27 +271,21 @@ const playWord = asyncHandler(async (query) => {
             }, { transaction });
         }
 
-        const totalPages = Math.ceil(totalQuestions / pageSize);
-
-        // Commit the transaction after successful operations
         await transaction.commit();
 
-        // Return the formatted data along with pagination information.
         return {
             totalQuestions,
-            totalPages,
+            totalPages: Math.ceil(totalQuestions / pageSize),
             currentPage,
             pageSize,
             searches: formattedData
         };
 
     } catch (error) {
-        // Rollback the transaction in case of any errors
         await transaction.rollback();
         throw error;
     }
 });
-
 
 
 const processGujaratiText = (text) => {
@@ -356,52 +339,44 @@ const processGujaratiText = (text) => {
 
 
 const fetchWords = asyncHandler(async (query) => {
-    const { lang } = query || {};
-    let whereCondition = {};
-    if (lang === 'guj') {
-        whereCondition.isGujrati = true;
-    } else if (lang === 'en') {
-        whereCondition.isGujrati = false;
-    }
-
-    // Fetch words with correct attribute names
+    // Fetch all words regardless of language
     const words = await db.guessWord.findAll({
-        where: whereCondition,
         attributes: ['gameId', 'gameImage', 'level', 'total_plays', 'word', 'isGujrati']
     });
 
-    // Extract gameIds using the correct getter
-    const gameIds = words.map(word => word.get('gameId')); // Using getter
-    console.log(gameIds, "@@@@");
+    const gameIds = words.map(word => word.get('gameId'));
 
-    // Fetch translations using 'gameId' instead of 'gameid'
+    // Fetch ALL translations for all languages in one query
     const translations = await db.guessWordTranslation.findAll({
-        where: { gameId: { [Op.in]: gameIds } }, // Correct attribute name
-        attributes: ['gameId', 'language', 'word', 'translationImage'] // Correct attribute name
+        where: { gameId: { [Op.in]: gameIds } },
+        attributes: ['gameId', 'language', 'word', 'translationImage']
     });
 
-    // Map translations to their respective gameIds
+    // Map translations by gameId -> { language -> { word, translationImage } }
     const translationsMap = new Map();
     translations.forEach(translation => {
-        if (!translationsMap.has(translation.gameId)) { // Correct attribute name
-            translationsMap.set(translation.gameId, []);
+        if (!translationsMap.has(translation.gameId)) {
+            translationsMap.set(translation.gameId, {});
         }
-        translationsMap.get(translation.gameId).push({
-            language: translation.language,
+        translationsMap.get(translation.gameId)[translation.language] = {
             word: translation.word,
             translationImage: translation.translationImage
-        });
+        };
     });
 
-    // Format words with their translations
+    // Format words with all language data nested
     const formattedWords = words.map(word => ({
-        gameId: word.get('gameId'), // Use getter for consistency
+        gameId: word.get('gameId'),
         gameImage: word.get('gameImage'),
         level: word.get('level'),
         totalPlays: word.get('total_plays'),
-        word: word.get('word'),
-        isGujrati: word.get('isGujrati'),
-        translations: translationsMap.get(word.get('gameId')) || [] 
+        languages: {
+            English: {
+                word: word.get('word'),
+                translationImage: word.get('gameImage')
+            },
+            ...(translationsMap.get(word.get('gameId')) || {})
+        }
     }));
 
     return formattedWords;

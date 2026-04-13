@@ -47,12 +47,6 @@ import auth from "../middleware/authToken.js";
  *       Returns images, answer word, correct image index, and pagination metadata.
  *     parameters:
  *       - in: query
- *         name: lang
- *         required: true
- *         schema:
- *           type: string
- *           enum: [en, guj]
- *       - in: query
  *         name: userId
  *         required: true
  *         schema:
