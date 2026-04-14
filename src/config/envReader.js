@@ -29,7 +29,8 @@ const getEnv =  {
     MAIL_PASS: process.env.MAIL_PASS,
 
     DEV_URL: process.env.DEV_URL,
-    PROD_URL: process.env.PROD_URL
+    PROD_URL: process.env.PROD_URL,
+    BASE_URL: process.env.BASEURL
 };
 
 export default getEnv;

@@ -191,6 +191,172 @@ router.get('/word-searchs',wordControler.fetchWordSearch);
  */
 router.get('/word-search-details',quizController.fetchWordSearchDetails)
 
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     WordSearchEntry:
+ *       type: object
+ *       required:
+ *         - level
+ *         - titles
+ *         - languages
+ *         - validWords
+ *       properties:
+ *         level:
+ *           type: integer
+ *           example: 1
+ *         titles:
+ *           type: array
+ *           items:
+ *             type: string
+ *           example: ["Fruits", "ફળો"]
+ *         languages:
+ *           type: array
+ *           items:
+ *             type: string
+ *           example: ["English", "Gujarati"]
+ *         validWords:
+ *           type: array
+ *           description: >
+ *             Outer array index matches languages index.
+ *             Each inner array is the word list for that language.
+ *           items:
+ *             type: array
+ *             items:
+ *               type: string
+ *           example:
+ *             - ["APPLE", "MANGO", "GRAPE"]
+ *             - ["સફરજન", "કેરી", "દ્રાક્ષ"]
+ *         difficulty:
+ *           type: string
+ *           enum: [easy, medium, hard]
+ *           example: easy
+ *         isGujrati:
+ *           oneOf:
+ *             - type: boolean
+ *             - type: string
+ *               enum: ["true", "false"]
+ *           default: false
+ *           example: true
+ *
+ *     WordSearchTranslation:
+ *       type: object
+ *       properties:
+ *         language:
+ *           type: string
+ *           example: "Gujarati"
+ *         title:
+ *           type: string
+ *           example: "ફળો"
+ *         validWords:
+ *           type: array
+ *           items:
+ *             type: string
+ *           example: ["સફરજન", "કેરી", "દ્રાક્ષ"]
+ *
+ *     WordSearchCreateResult:
+ *       type: object
+ *       properties:
+ *         gameId:
+ *           type: integer
+ *           example: 42
+ *         level:
+ *           type: integer
+ *           example: 1
+ *         translations:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/WordSearchTranslation'
+ */
+
+/**
+ * @swagger
+ * /play/bulk-create:
+ *   post:
+ *     summary: Bulk create word-search games with translations
+ *     tags:
+ *       - WordSearch
+ *     description: >
+ *       Accepts either a **single entry object** or an **array of entry objects**.
+ *       `titles`, `languages`, and `validWords` must all be the same length.
+ *       `English` must always be present as a language — it is stored as the
+ *       base record; all other languages are stored as translations.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             oneOf:
+ *               - $ref: '#/components/schemas/WordSearchEntry'
+ *               - type: array
+ *                 items:
+ *                   $ref: '#/components/schemas/WordSearchEntry'
+ *                 minItems: 1
+ *           examples:
+ *             single:
+ *               summary: Single entry
+ *               value:
+ *                 level: 1
+ *                 titles: ["Fruits", "ફળો"]
+ *                 languages: ["English", "Gujarati"]
+ *                 difficulty: easy
+ *                 isGujrati: true
+ *                 validWords:
+ *                   - ["APPLE", "MANGO", "GRAPE"]
+ *                   - ["સફરજન", "કેરી", "દ્રાક્ષ"]
+ *             bulk:
+ *               summary: Multiple entries
+ *               value:
+ *                 - level: 1
+ *                   titles: ["Fruits", "ફળો"]
+ *                   languages: ["English", "Gujarati"]
+ *                   difficulty: easy
+ *                   isGujrati: true
+ *                   validWords:
+ *                     - ["APPLE", "MANGO", "GRAPE"]
+ *                     - ["સફરજન", "કેરી", "દ્રાક્ષ"]
+ *                 - level: 2
+ *                   titles: ["Animals", "પ્રાણીઓ"]
+ *                   languages: ["English", "Gujarati"]
+ *                   difficulty: medium
+ *                   isGujrati: true
+ *                   validWords:
+ *                     - ["CAT", "DOG", "LION"]
+ *                     - ["બિલાડી", "કૂતરો", "સિંહ"]
+ *     responses:
+ *       200:
+ *         description: All entries created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiSuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/WordSearchCreateResult'
+ *       400:
+ *         description: Validation error (missing fields, length mismatch, English not present)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiErrorResponse'
+ *             example:
+ *               success: false
+ *               message: "Entry[0]: 'validWords', 'titles', and 'languages' must all have the same length."
+ *       500:
+ *         description: Database or server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiErrorResponse'
+ */
+router.post('/bulk-create', wordControler.createBulkWordSearch);
+
 /**
  * @swagger
  * /play/create:

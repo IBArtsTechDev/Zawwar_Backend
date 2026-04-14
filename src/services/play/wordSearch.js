@@ -649,11 +649,136 @@ const createWordSearchFromExcel = asyncHandler(async (file) => {
     };
 });
 
+const createBulkWordSearch = asyncHandler(async (body) => {
+  // ── 1. Accept both a single object and an array ──────────────────────────
+  const entries = Array.isArray(body) ? body : [body];
+
+  if (entries.length === 0) {
+    throw new ErrorResponse("Request body must contain at least one word-search entry.", 400);
+  }
+
+  // ── 2. Validate every entry up-front before touching the DB ──────────────
+  for (const [i, entry] of entries.entries()) {
+    const { level, validWords, titles, languages } = entry;
+    const prefix = `Entry[${i}]`;
+
+    if (!level) {
+      throw new ErrorResponse(`${prefix}: 'level' is required.`, 400);
+    }
+
+    for (const [field, value] of [["validWords", validWords], ["titles", titles], ["languages", languages]]) {
+      if (!Array.isArray(value) || value.length === 0) {
+        throw new ErrorResponse(`${prefix}: '${field}' must be a non-empty array.`, 400);
+      }
+    }
+
+    if (validWords.length !== titles.length || validWords.length !== languages.length) {
+      throw new ErrorResponse(
+        `${prefix}: 'validWords', 'titles', and 'languages' must all have the same length.`,
+        400
+      );
+    }
+
+    for (const [j, words] of validWords.entries()) {
+      if (!Array.isArray(words) || !words.every((w) => typeof w === "string")) {
+        throw new ErrorResponse(
+          `${prefix}: validWords[${j}] must be an array of strings.`,
+          400
+        );
+      }
+    }
+
+    const hasEnglish = languages.some((lang) => lang.toLowerCase() === "english");
+    if (!hasEnglish) {
+      throw new ErrorResponse(`${prefix}: English language data is required.`, 400);
+    }
+  }
+
+  // ── 3. Persist all entries in a single transaction ────────────────────────
+  const transaction = await db.sequelize.transaction();
+
+  try {
+    const results = await Promise.all(
+      entries.map(async (entry) => {
+        const {
+          level,
+          validWords,
+          titles,
+          languages,
+          isGujrati = false,
+        } = entry;
+
+        const isGujratiBool =
+          typeof isGujrati === "string"
+            ? isGujrati.toLowerCase() === "true"
+            : Boolean(isGujrati);
+
+        const englishIndex = languages.findIndex(
+          (lang) => lang.toLowerCase() === "english"
+        );
+
+        // Create the primary (English) record
+        const newSearch = await db.Search.create(
+          {
+            level,
+            title: titles[englishIndex],
+            validWords: JSON.stringify(validWords[englishIndex]),
+            isGujrati: isGujratiBool,
+            language: languages[englishIndex],
+          },
+          { transaction }
+        );
+
+        // Build translation rows (all non-English languages)
+        const translations = languages
+          .map((lang, idx) =>
+            idx !== englishIndex
+              ? {
+                  gameId: newSearch.gameId,
+                  language: lang,
+                  title: titles[idx],
+                  validWords: JSON.stringify(validWords[idx]),
+                }
+              : null
+          )
+          .filter(Boolean);
+
+        if (translations.length > 0) {
+          await db.SearchTranslation.bulkCreate(translations, { transaction });
+        }
+
+        return {
+          gameId: newSearch.gameId,
+          level,
+          translations: translations.map((t) => ({
+            language: t.language,
+            title: t.title,
+            validWords: JSON.parse(t.validWords),
+          })),
+        };
+      })
+    );
+
+    await transaction.commit();
+    return results;
+  } catch (error) {
+    await transaction.rollback();
+    // Re-throw known validation errors as-is
+    if (error instanceof ErrorResponse) throw error;
+    throw new ErrorResponse(
+      `Failed to create word searches: ${error.message}`,
+      500
+    );
+  }
+});
+
+
 export default {
     createWordSearchFromExcel,
     fetchWordSearch,
     createWordSearch,
     updateWordSearch,
     deleteWordSearch,
-    playWordSearch
+    playWordSearch,
+    createBulkWordSearch
 };;

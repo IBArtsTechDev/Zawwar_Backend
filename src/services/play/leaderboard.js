@@ -137,37 +137,59 @@ cron.schedule('0 0 * * *', () => {
 
 // Fetch Leaderboard function
 const fetchLeaderboard = asyncHandler(async (query) => {
-    const { type, userId } = query;
+    const { type, userId, page = 1, limit = 15 } = query;
+
     if (!['weekly', 'monthly', 'yearly'].includes(type)) {
         throw new ErrorResponse('Invalid type. Use "weekly", "monthly", or "yearly".', 400);
     }
+
+    const offset = (page - 1) * limit;
+
     const { startDate, endDate } = getDateRange(type);
+    console.log(startDate,endDate);
+    
+
     const whereCondition = {
         createdAt: {
             [Op.between]: [startDate, endDate]
         }
     };
 
-    // If userId is provided, filter users based on age
+    // ✅ Age filter
     if (userId) {
         const user = await db.user.findOne({
             attributes: ['dob'],
             where: { userId },
             raw: true
         });
+
         if (!user) {
             throw new ErrorResponse('User not found', 404);
         }
+
         const age = calculateAge(user.dob);
-        console.log('User age:', age);
-        if (age < 16) {
-            whereCondition['userId'] = { [Op.in]: await getUsersUnderAge(16) };
-        } else {
-            whereCondition['userId'] = { [Op.in]: await getUsersOverAge(16) };
-        }
+
     }
 
+    // ✅ MAIN QUERY WITH LIMIT + OFFSET
     const leaderboard = await db.points.findAll({
+        attributes: [
+            'userId',
+            [Sequelize.fn('SUM', Sequelize.col('points')), 'totalPoints']
+        ],
+        where: whereCondition,
+        group: ['userId'],
+        order: [[Sequelize.literal('totalPoints'), 'DESC']],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        subQuery: false,
+        raw: true
+    });
+    console.log(leaderboard);
+    
+
+    // 🔥 IMPORTANT: Get full ranking separately (for correct rank)
+    const fullLeaderboard = await db.points.findAll({
         attributes: [
             'userId',
             [Sequelize.fn('SUM', Sequelize.col('points')), 'totalPoints']
@@ -178,38 +200,53 @@ const fetchLeaderboard = asyncHandler(async (query) => {
         raw: true
     });
 
+    const rankMap = {};
+    fullLeaderboard.forEach((entry, index) => {
+        rankMap[entry.userId] = index + 1;
+    });
+
     const userIds = leaderboard.map(entry => entry.userId);
 
     const users = await db.user.findAll({
         attributes: ['userId', 'userName', 'profile_avatar', 'dob'],
         where: {
-            userId: {
-                [Op.in]: userIds
-            }
+            userId: { [Op.in]: userIds }
         },
         raw: true
     });
 
-    // Create a map of user details by userId
     const userMap = users.reduce((acc, user) => {
         acc[user.userId] = user;
         return acc;
     }, {});
 
-    // Combine leaderboard with user details
-    const leaderboardWithRank = leaderboard.map((entry, index) => {
+    const leaderboardWithRank = leaderboard.map(entry => {
         const user = userMap[entry.userId];
         return {
             userId: entry.userId,
             totalPoints: entry.totalPoints,
-            userName: user ? user.userName : null,
-            profile_avatar: user ? user.profile_avatar : null,
-            dob: user ? user.dob : null,
-            rank: index + 1
+            userName: user?.userName || null,
+            profile_avatar: user?.profile_avatar || null,
+            dob: user?.dob || null,
+            rank: rankMap[entry.userId] // ✅ correct global rank
         };
     });
 
-    return leaderboardWithRank;
+    let currentUserEntry = null;
+
+    if (userId) {
+        currentUserEntry = leaderboardWithRank.find(
+            user => user.userId == userId
+        ) || null;
+    }
+
+    return {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        leaderboard: leaderboardWithRank,          // full list
+        currentUser: currentUserEntry,             // current user rank
+        totalPlayers: leaderboardWithRank.length 
+    };
 });
 
 // Function to handle score updates

@@ -207,6 +207,18 @@ router.post('/google',userControler.socialLogin)
  *         name: userId
  *         schema:
  *           type: integer
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 15
+ *         description: Number of records per page
  *     responses:
  *       200:
  *         description: Latest leaderboard fetched successfully

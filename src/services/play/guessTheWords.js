@@ -4,6 +4,7 @@ import ErrorResponse from "../../utlis/ErrorResponse.js";
 import { Op } from "sequelize";
 import fs from "fs";
 import path from "path";
+import getEnv from "../../config/envReader.js";
 const baseURL = "http://localhost:9000"
 
 const createGuessWord = asyncHandler(async (body, files) => {
@@ -468,7 +469,10 @@ const playGuessWord = asyncHandler(async (query) => {
     const gujaratiClean = gujaratiWord ? gujaratiWord.replace(/[^અ-હ઼-ૐ]/g, '') : '';
     const gujaratiArray = gujaratiClean.split('');
 
+    const baseUrl = `${getEnv.DEV_URL}/uploads/`;
+
     return {
+        baseurl: baseUrl,
         gameId: wordEntry.gameId,
         level: wordEntry.level,
         correct_image: wordEntry.correct_Image,

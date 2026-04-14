@@ -32,11 +32,17 @@ const createWordSearchFromExcel = asyncHandler(async(req,res)=>{
     res.successResponse = new successResponse("words created successfully",200,result)
 })
 
+const createBulkWordSearch = asyncHandler(async(req,res)=>{
+    const result = await wordController.createBulkWordSearch(req.body);
+    res.successResponse = new successResponse("words created successfully",200,result);
+});
+
 export default {
     createWordSearchFromExcel,
     fetchWordSearch,
     createWordSearch,
     updateWordSearch,
     deleteWordSearch,
-    playWordSearch
+    playWordSearch,
+    createBulkWordSearch
 };
