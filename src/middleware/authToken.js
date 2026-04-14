@@ -1,11 +1,24 @@
 import jwt from "jsonwebtoken";
 import getEnv from "../config/envReader.js";
 
-const generateToken = (payload) => {
+// const generateToken = (payload) => {
+//   return jwt.sign(payload, getEnv.JWT_SECRET, {
+//     expiresIn: '200hr',
+//   });
+// };
+
+const generateAccessToken = (payload) => {
   return jwt.sign(payload, getEnv.JWT_SECRET, {
-    expiresIn: '200hr',
+    expiresIn: '7d',
   });
 };
+
+const generateRefreshToken = (payload) => {
+  return jwt.sign(payload, getEnv.JWT_SECRET, {
+    expiresIn: '60d',
+  });
+};
+
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.header("Authorization");
@@ -45,6 +58,7 @@ const verifyToken = (req, res, next) => {
 };
 
 export default {
-  generateToken,
+  generateAccessToken,
+  generateRefreshToken,
   verifyToken,
 };;

@@ -100,7 +100,11 @@ const login = asyncHandler(async (body) => {
       userEmail: user.userEmail,
       userType: user.userType
     };
-    const token = auth.generateToken(tokenPayload);
+    const token = auth.generateAccessToken(tokenPayload);
+    const refreshToken = auth.generateRefreshToken(tokenPayload);
+    user.refreshToken = refreshToken;
+    await user.save();
+
     if(fcmToken){
       user.fcm = fcmToken;
       await user.save()
@@ -229,7 +233,11 @@ const socialLogin = asyncHandler(async (body, fcmToken) => {
      userEmail: existing_user.userEmail,
      userType: existing_user.userType
    };
-   const token = auth.generateToken(tokenPayload);
+   const token = auth.generateAccessToken(tokenPayload);
+   const refreshToken = auth.generateRefreshToken(tokenPayload);
+   existing_user.refreshToken = refreshToken;
+   await existing_user.save();
+
    const { password: _, updatedAt: __, createdAt: ___, ...userData } = existing_user.toJSON();
 
 
@@ -275,7 +283,11 @@ const socialLogin = asyncHandler(async (body, fcmToken) => {
      userEmail: existing_user.userEmail,
      userType: existing_user.userType
    };
-   const token = auth.generateToken(tokenPayload);
+   const token = auth.generateAccessToken(tokenPayload);
+   const refreshToken = auth.generateRefreshToken(tokenPayload);
+   existing_user.refreshToken = refreshToken;
+   await existing_user.save();
+
    let countryCode = '91'; 
    let cleanedPhoneNumber = null; 
    if (existing_user.phoneNo) {
@@ -593,7 +605,10 @@ const appleLogin = asyncHandler(async (body) => {
       userEmail: existing_user.userEmail,
       userType: existing_user.userType,
     };
-    const token = auth.generateToken(tokenPayload);
+   const token = auth.generateAccessToken(tokenPayload);
+   const refreshToken = auth.generateRefreshToken(tokenPayload);
+   existing_user.refreshToken = refreshToken;
+   await existing_user.save();
     const { password: _, updatedAt: __, createdAt: ___, ...userData } = existing_user.toJSON();
 
     return {
@@ -612,7 +627,11 @@ const appleLogin = asyncHandler(async (body) => {
       userEmail: existing_user.userEmail,
       userType: existing_user.userType,
     };
-    const token = auth.generateToken(tokenPayload);
+   const token = auth.generateAccessToken(tokenPayload);
+   const refreshToken = auth.generateRefreshToken(tokenPayload);
+   existing_user.refreshToken = refreshToken;
+   await existing_user.save();
+   
     let countryCode = "91";
     if (existing_user.phoneNo) {
       countryCode = getCountryCode(existing_user.phoneNo);

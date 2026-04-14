@@ -51,115 +51,122 @@ const processGujaratiText = (text) => {
     }
     return result;
 };
+// Utility: shuffle an array in place (Fisher-Yates)
+const shuffleArray = (arr) => {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
+const ALL_DIRECTIONS = [
+  { x: 0,  y:  1, name: 'left-to-right'    },
+  { x: 0,  y: -1, name: 'right-to-left'    },
+  { x: 1,  y:  0, name: 'top-to-bottom'    },
+  { x: -1, y:  0, name: 'bottom-to-top'    },
+  { x: 1,  y:  1, name: 'diagonal-down-right' },
+  { x: -1, y: -1, name: 'diagonal-up-left'    },
+  { x: 1,  y: -1, name: 'diagonal-down-left'  },
+  { x: -1, y:  1, name: 'diagonal-up-right'   },
+];
+
 const generateGrid = (validWords = [], gridSize = 10, isGujrati = false) => {
-    let grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(''));
-    const hints = [];
-    const directions = [
-        { x: 0, y: 1 }, 
-        { x: 0, y: -1 },
-        { x: 1, y: 0 }, 
-        { x: -1, y: 0 },
-        { x: 1, y: 1 },
-        { x: -1, y: -1 },
-        { x: 1, y: -1 },
-        { x: -1, y: 1 }
-    ];
-    const diagonalWords = validWords.filter(word => word.length >= 3 && word.length <= 4);
-    const otherWords = validWords.filter(word => word.length < 3 || word.length > 4);
-    const canFitWord = (word, direction, startRow, startCol) => {
-        console.log(word,'ddd')
-        let row = startRow;
-        let col = startCol;
-        for (let i = 0; i < word.length; i++) {
-            console.log(word[i])
-            if (
-                row >= gridSize || col >= gridSize || row < 0 || col < 0 ||
-                (grid[row][col] !== '' && grid[row][col] !== word[i])
-            ) {
-                return false;
-            }
-            row += direction.x;
-            col += direction.y;
-        }
-        return true;
-    };
-    const placeWord = (words, directionsToTry) => {
-        const word = processGujaratiText(words)
-        console.log(word) 
-        let placed = false;
-        for (let direction of directionsToTry) {
-            for (let attempt = 0; attempt < 100; attempt++) { 
-                const startRow = Math.floor(Math.random() * gridSize);
-                const startCol = Math.floor(Math.random() * gridSize);
-                if (canFitWord(word, direction, startRow, startCol)) {
-                    let row = startRow;
-                    let col = startCol;
+  // ── 1. Pre-process all words into token arrays once ──────────────────────
+  const processedWords = validWords.map((word) => ({
+    raw: word,
+    tokens: processGujaratiText(word), // array of grapheme clusters / chars
+  }));
 
-                    for (let i = 0; i < word.length; i++) {
-                        grid[row][col] = word[i];
-                        row += direction.x;
-                        col += direction.y;
-                    }
-                    hints.push({
-                        word: word,
-                        startRow: startRow,
-                        startCol: startCol,
-                        direction: direction.name
-                    });
-                    
-                    placed = true;
-                    break;
-                }
-            }
-            if (placed) break;
-        }
-        if (!placed) {
-            console.log(`Failed to place word "${word}".`);
-        }
-        return placed;
-    };
-    const fillEmptyCells = () => {
-        const gujaratiBaseCharacters = "અઆઇઈઉઊઍએઐઓઔકગઙઝટઠડણતદધપબમયરલવશસહ".split('');
-        const alphabet = isGujrati ? gujaratiBaseCharacters : "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
-        grid = grid.map(row => 
-            row.map(cell => {
-                if (isGujrati) {
-                    return cell === '' ? alphabet[Math.floor(Math.random() * alphabet.length)] : cell;
-                }
-                return cell === '' ? alphabet[Math.floor(Math.random() * alphabet.length)] : cell;
-            })
-        );
-        };
+  // ── 2. Sort longest-first so big words claim space before small ones ──────
+  processedWords.sort((a, b) => b.tokens.length - a.tokens.length);
 
-    diagonalWords.forEach(word => {
-        const diagonalDirections = [
-            { x: 1, y: 1, name: 'Diagonal down-right' },   
-            { x: -1, y: -1, name: 'Diagonal up-left' },
-            { x: 1, y: -1, name: 'Diagonal down-left' },
-            { x: -1, y: 1, name: 'Diagonal up-right' }
-        ];
+  let grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(''));
+  const hints = [];
 
-        if (!placeWord(word, diagonalDirections)) {
-            console.log(`Failed to place diagonal word "${word}".`);
-        }
+  // ── 3. Core fit check (works on pre-processed token arrays) ──────────────
+  const canFitWord = (tokens, direction, startRow, startCol) => {
+    let row = startRow;
+    let col = startCol;
+    for (const token of tokens) {
+      if (row < 0 || row >= gridSize || col < 0 || col >= gridSize) return false;
+      if (grid[row][col] !== '' && grid[row][col] !== token) return false;
+      row += direction.x;
+      col += direction.y;
+    }
+    return true;
+  };
+
+  // ── 4. Place a single word with randomised directions + positions ─────────
+  const placeWord = ({ raw, tokens }) => {
+    // Which directions are legal for this word length?
+    // Words longer than gridSize can't fit diagonally or straight — skip those.
+    const validDirections = ALL_DIRECTIONS.filter((dir) => {
+      // For diagonal, word must fit within both axes
+      if (dir.x !== 0 && dir.y !== 0) return tokens.length <= gridSize;
+      return true;
     });
-    otherWords.forEach(word => {
-        const horizontalAndVerticalDirections = [
-            { x: 0, y: 1, name: 'left-to-right' },  
-            { x: 0, y: -1, name: 'right-to-left' }, 
-            { x: 1, y: 0, name: 'top-to-bottom' },   
-            { x: -1, y: 0, name: 'bottom-to-top' }
-        ];
-        if (!placeWord(word, horizontalAndVerticalDirections)) {
-            console.log(`Failed to place horizontal/vertical word "${word}".`);
+
+    // Shuffle directions for variety every single placement
+    const shuffledDirs = shuffleArray([...validDirections]);
+
+    for (const direction of shuffledDirs) {
+      // Generate ALL valid starting positions, then shuffle them
+      const positions = [];
+      for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
+          if (canFitWord(tokens, direction, r, c)) {
+            positions.push({ r, c });
+          }
         }
-    });
-    fillEmptyCells();
-    console.log(hints)
-    return {
-        grid,
-        hints
-    };
+      }
+
+      if (positions.length === 0) continue;
+
+      // Pick a random valid position (not always the first one found)
+      const { r: startRow, c: startCol } =
+        positions[Math.floor(Math.random() * positions.length)];
+
+      // Commit to grid
+      let row = startRow;
+      let col = startCol;
+      for (const token of tokens) {
+        grid[row][col] = token;
+        row += direction.x;
+        col += direction.y;
+      }
+
+      hints.push({
+        word: tokens,
+        startRow,
+        startCol,
+        direction: direction.name,
+      });
+
+      return true;
+    }
+
+    console.warn(`Could not place word: "${raw}"`);
+    return false;
+  };
+
+  // ── 5. Place all words ────────────────────────────────────────────────────
+  for (const wordEntry of processedWords) {
+    placeWord(wordEntry);
+  }
+
+  // ── 6. Fill empty cells with random filler ────────────────────────────────
+  const GUJARATI_FILLERS = 'અઆઇઈઉઊઍએઐઓઔકખગઘઙચછજઝઞટઠડઢણતથદધનપફબભમયરલળવશષસહ'.split('');
+  const ENGLISH_FILLERS  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const fillers = isGujrati ? GUJARATI_FILLERS : ENGLISH_FILLERS;
+
+  grid = grid.map((row) =>
+    row.map((cell) =>
+      cell === '' ? fillers[Math.floor(Math.random() * fillers.length)] : cell
+    )
+  );
+
+  return { grid, hints };
 };
 
 const createWordSearch = asyncHandler(async (body) => {
@@ -316,287 +323,146 @@ const deleteWordSearch = asyncHandler(async (query) => {
     };
 });
 
-/* const playWordSearch = asyncHandler(async (query) => {
-    const { lang, page = 1, userId } = query;
-    const pageSize = 10;
-  
-    // Language Validation (using a mapping for shorter code)
-    const langCodeMap = {
-      'en': 'english',
-      'guj': 'gujarati',
-      'es': 'spanish'
-      // Add more language short codes as needed
-    };
-    const fullLang = langCodeMap[lang.toLowerCase()];
-  
-    if (!fullLang) {
-      throw new ErrorResponse(`Invalid language parameter. Choose one of: ${Object.keys(langCodeMap).join(', ')}`, 400);
-    }
-  
-    const offset = (page - 1) * pageSize;
-    const limit = pageSize;
-  
-    const transaction = await db.sequelize.transaction();
-    try {
-      const totalSearches = await db.Search.count({ where: { language: fullLang } });
-  
-      const answeredGameIds = await db.gameAnswer.findAll({
-        attributes: ['gameId'],
-        where: { isCorrect: true, userId, type: 'Word-search' },
-        group: ['gameId'],
-        raw: true
-      });
-      const answeredGameIdSet = new Set(answeredGameIds.map(answer => answer.gameId));
-  
-      const searchResults = [];
-      let allValidWords = [];
-      let currentOffset = offset;
-      let fetchedGames = 0;
-  
-      while (fetchedGames < pageSize) {
-        const searches = await db.Search.findAll({
-          where: { language: fullLang },
-          include: [{
-            model: db.SearchTranslation,
-            as: 'translations'
-          }],
-          order: [['level', 'ASC']],
-          offset: currentOffset,
-          limit
-        });
-  
-        if (!searches || searches.length === 0) {
-          break;
-        }
-  
-        for (const search of searches) {
-          if (answeredGameIdSet.has(search.gameId)) {
-            continue;
-          }
-  
-          try {
-            let validWords = typeof search.validWords === 'string'
-              ? JSON.parse(search.validWords)
-              : search.validWords;
-  
-            if (!Array.isArray(validWords)) {
-              throw new Error("Invalid validWords format");
-            }
-  
-            allValidWords.push(...validWords);
-            const gridSize = calculateGridSize(validWords);
-            const isGujarati = fullLang === 'gujarati';
-            const grid = generateGrid(validWords, gridSize, isGujarati);
-  
-            const title = search.translations[0]?.title || search.title;
-  
-            searchResults.push({
-              grid: grid.grid,
-              validWords,
-              level: search.level,
-              title: title,
-              hints: grid.hints,
-              gameId: search.gameId
-            });
-  
-            fetchedGames++;
-            if (fetchedGames >= pageSize) {
-              break;
-            }
-  
-          } catch (error) {
-            console.warn(`Skipping search record with invalid validWords format: ${JSON.stringify(search)}. Error: ${error.message}`);
-          }
-        }
-        currentOffset += limit;
-      }
-  
-      allValidWords = [...new Set(allValidWords)];
-      if (allValidWords.length === 0) {
-        throw new ErrorResponse("No valid words available for grid generation", 400);
-      }
-  
-      if (searchResults.length === 0) {
-        throw new ErrorResponse(`No ${fullLang} word searches found`, 404);
-      }
-  
-      await db.activity.create({
-        gameId: searchResults[0]?.gameId,
-        game_category: 'Word_Search',
-        userId
-      }, { transaction });
-  
-      const totalPages = Math.ceil(totalSearches / pageSize);
-      await transaction.commit();
-  
-      return {
-        totalPages,
-        page,
-        searches: searchResults
-      };
-  
-    } catch (error) {
-      await transaction.rollback();
-      throw error;
-    }
-  }); */// Adjust the import according to your project structure
-
 const playWordSearch = asyncHandler(async (query) => {
   const { page = 1, userId } = query;
   const pageSize = 10;
+  const pageNum = parseInt(page, 10) || 1;
+  const offset   = (pageNum - 1) * pageSize;
 
-  const allLanguages = ['English', 'Gujarati'];
+  // ── 1. Answered games (only fetch IDs, not full rows) ──────────────────
+  const answeredRows = await db.gameAnswer.findAll({
+    attributes: ['gameId'],
+    where:      { isCorrect: true, userId, type: 'Word-search' },
+    group:      ['gameId'],
+    raw:        true,
+  });
+  const answeredSet = new Set(answeredRows.map((r) => r.gameId));
 
-  const offset = (page - 1) * pageSize;
-  const limit = pageSize;
+  // ── 2. Pagination meta ──────────────────────────────────────────────────
+  const totalSearches = await db.Search.count();
+  const totalPages    = Math.ceil(totalSearches / pageSize);
 
+  // ── 3. Fetch base (English) records — only columns we actually need ─────
+  const baseSearches = await db.Search.findAll({
+    attributes: ['gameId', 'level', 'title', 'validWords', 'total_plays', 'language'],
+    order:      [['level', 'ASC']],
+    offset,
+    limit:      pageSize,
+  });
+
+  if (!baseSearches.length) {
+    throw new ErrorResponse('No word searches found', 404);
+  }
+
+  // ── 4. Batch-fetch translations for this page's gameIds only ───────────
+  const gameIds = baseSearches.map((s) => s.gameId);
+
+  const allTranslations = await db.SearchTranslation.findAll({
+    attributes: ['gameId', 'language', 'title', 'validWords'],
+    where:      { gameId: { [Sequelize.Op.in]: gameIds } },
+  });
+
+  // { gameId -> { language -> record } }
+  const translationsMap = new Map();
+  for (const t of allTranslations) {
+    if (!translationsMap.has(t.gameId)) translationsMap.set(t.gameId, new Map());
+    translationsMap.get(t.gameId).set(t.language, t);
+  }
+
+  // ── 5. Build response ───────────────────────────────────────────────────
+  const searchResults = [];
+
+  for (const search of baseSearches) {
+    if (answeredSet.has(search.gameId)) continue;
+
+    try {
+      // Parse & validate English words
+      const englishWords = parseAndValidateWords(search.validWords);
+
+      // Determine which languages are available for this game
+      const availableLanguages = ['English'];
+      const gameTranslations = translationsMap.get(search.gameId);
+      if (gameTranslations) {
+        for (const lang of gameTranslations.keys()) availableLanguages.push(lang);
+      }
+
+      const languageData = {};
+
+      for (const lang of availableLanguages) {
+        const isGujarati = lang.toLowerCase() === 'gujarati';
+
+        let langWords = englishWords;
+        let title     = search.title;
+
+        if (lang !== 'English') {
+          const translation = gameTranslations?.get(lang);
+          if (translation) {
+            title     = translation.title || search.title;
+            langWords = parseAndValidateWords(translation.validWords, englishWords);
+            // Don't toUpperCase Gujarati — it has no case
+          }
+        } else {
+          langWords = englishWords.map((w) => w.toUpperCase());
+        }
+
+        const gridSize = calculateGridSize(langWords);
+        const grid     = generateGrid(langWords, gridSize, isGujarati);
+
+        languageData[lang] = {
+          title,
+          validWords: langWords,
+          grid:       grid.grid,
+          hints:      grid.hints,
+        };
+      }
+
+      searchResults.push({
+        gameId:     search.gameId,
+        level:      search.level,
+        totalPlays: search.total_plays || 0,
+        languages:  languageData,
+      });
+    } catch (err) {
+      console.warn(`Skipping gameId ${search.gameId}: ${err.message}`);
+    }
+  }
+
+  if (searchResults.length === 0) {
+    throw new ErrorResponse('No word searches found', 404);
+  }
+
+  // ── 6. Log activity — use a short-lived transaction only where needed ───
   const transaction = await db.sequelize.transaction();
   try {
-    // Fetch game IDs the user has already answered correctly (all types)
-    const answeredGameIds = await db.gameAnswer.findAll({
-      attributes: ['gameId'],
-      where: { isCorrect: true, userId, type: 'Word-search' },
-      group: ['gameId'],
-      raw: true
-    });
-
-    const answeredGameIdSet = new Set(answeredGameIds.map(answer => answer.gameId));
-
-    // Fetch total searches count across all languages (use English as base to avoid duplicates)
-    const totalSearches = await db.Search.count();
-    const totalPages = Math.ceil(totalSearches / pageSize);
-
-    // Fetch base English searches (paginated) — English is source of truth for gameId, level, total_plays
-    const baseSearches = await db.Search.findAll({
-      order: [['level', 'ASC']],
-      offset,
-      limit
-    });
-
-    if (!baseSearches || baseSearches.length === 0) {
-      throw new ErrorResponse(`No word searches found`, 404);
-    }
-
-    const gameIds = baseSearches.map(s => s.gameId);
-
-    // Fetch all translations for these gameIds across all non-English languages
-    const allTranslations = await db.SearchTranslation.findAll({
-      where: {
-        gameId: { [Sequelize.Op.in]: gameIds }
-      }
-    });
-    console.log("Translation Word: ", allTranslations);
-    
-
-    // Build a nested map: { gameId -> { language -> translationRecord } }
-    const translationsMap = new Map();
-    allTranslations.forEach(t => {
-      if (!translationsMap.has(t.gameId)) {
-        translationsMap.set(t.gameId, new Map());
-      }
-      translationsMap.get(t.gameId).set(t.language, t);
-    });
-
-    const searchResults = [];
-
-    for (const search of baseSearches) {
-      if (answeredGameIdSet.has(search.gameId)) {
-        continue; // Skip already answered games
-      }
-
-      try {
-        // Validate and parse validWords
-        let validWords = typeof search.validWords === 'string'
-          ? JSON.parse(search.validWords)
-          : search.validWords;
-
-        if (!Array.isArray(validWords)) {
-          throw new Error("Invalid validWords format");
-        }
-
-        validWords = validWords.map(word => word.toUpperCase());
-
-        const level = search.level;
-        const totalPlays = search.total_plays || 0;
-
-        // Build per-language data
-        const languageData = {};
-
-        for (const lang of allLanguages) {
-          const isGujarati = lang === 'Gujarati';
-
-          // For non-English, try to get translated validWords if stored in translation
-          let langValidWords = validWords;
-          let title = search.title; // fallback to English title
-
-          if (lang !== 'English') {
-            const translation = translationsMap.get(search.gameId)?.get(lang);
-            if (translation) {
-              title = translation.title || search.title;
-
-              // If translations store their own validWords, parse them
-              if (translation.validWords) {
-                try {
-                  const translatedWords = typeof translation.validWords === 'string'
-                    ? JSON.parse(translation.validWords)
-                    : translation.validWords;
-
-                  if (Array.isArray(translatedWords)) {
-                    langValidWords = translatedWords.map(w => w.toUpperCase());
-                  }
-                } catch {
-                  langValidWords = validWords; // fallback to English words
-                }
-              }
-            }
-          }
-
-          const gridSize = calculateGridSize(langValidWords);
-          const grid = generateGrid(langValidWords, gridSize, isGujarati);
-
-          languageData[lang] = {
-            title,
-            validWords: langValidWords,
-            grid: grid.grid,
-            hints: grid.hints
-          };
-        }
-
-        searchResults.push({
-          gameId: search.gameId,
-          level,
-          totalPlays,
-          languages: languageData  // all languages nested under one game entry
-        });
-
-      } catch (error) {
-        console.warn(`Skipping search record gameId ${search.gameId}. Error: ${error.message}`);
-      }
-    }
-
-    if (searchResults.length === 0) {
-      throw new ErrorResponse(`No word searches found`, 404);
-    }
-
-    await db.activity.create({
-      gameId: searchResults[0]?.gameId,
-      game_category: 'Word_Search',
-      userId
-    }, { transaction });
-
+    await db.activity.create(
+      {
+        gameId:        searchResults[0].gameId,
+        game_category: 'Word_Search',
+        userId,
+      },
+      { transaction }
+    );
     await transaction.commit();
-
-    return {
-      totalPages,
-      page,
-      searches: searchResults
-    };
-
-  } catch (error) {
+  } catch (err) {
     await transaction.rollback();
-    throw error;
+    // Activity logging failure should NOT fail the whole request
+    console.error(`Activity log failed for userId ${userId}:`, err.message);
   }
+
+  return { totalPages, page: pageNum, searches: searchResults };
 });
+
+// ── Helper: safely parse validWords, fall back to `fallback` array ────────
+const parseAndValidateWords = (raw, fallback = null) => {
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+  } catch {
+    // fall through
+  }
+  if (fallback) return fallback;
+  throw new Error('Invalid validWords format');
+};
 
 function calculateGridSize(words) {
     console.log(words);
@@ -632,7 +498,9 @@ const fetchWordSearch = asyncHandler(async () => {
                 return typeof value === 'string' ? value.split(',') : [];
             }
         };
-        const wordSearches = await db.Search.findAll();
+        const wordSearches = await db.Search.findAll({
+            order: [['level', 'ASC']],
+        });
         const availableWordSearches = await Promise.all(wordSearches.map(async (search) => {
             // Parse valid words from the search
             const validWords = safeParse(search.validWords);    

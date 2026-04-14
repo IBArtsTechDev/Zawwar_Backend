@@ -58,6 +58,10 @@ const defineUser = (sequelize) => {
       type:DataTypes.STRING,
       allowNull:true,
     },
+    refreshToken:{
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     badges: {
       type: DataTypes.JSON,
       allowNull: true,
