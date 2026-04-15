@@ -15,7 +15,7 @@ import leagues from './src/routes/play.js';
 import ads from './src/routes/Ads.js';
 import wordSearch from './src/routes/wordSearch.js';
 import privacy from './src/routes/privacy.js';
-import db from './src/config/db.js'
+import db, { initialize } from './src/config/db.js'
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./src/config/swagger.js";
 import requestLogger from "./src/middleware/requestLogger.js";
@@ -53,14 +53,22 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(success)
 app.use(error)
 
-if (db.sequelize) {
-  // syncDatabase()
-  console.log("Database is connected.");
+async function startServer() {
+    try {
+        await initialize(); 
 
-} else {
-  console.error("Database is not connected.");
+        if (db.sequelize) {
+            console.log("Database is connected.");
+        }
+
+        app.listen(port, () => {
+            console.log(`server running at ${port}`);
+        });
+
+    } catch (error) {
+        console.error("Startup error:", error);
+        process.exit(1);
+    }
 }
 
-app.listen(port,()=>{
-    console.log( `server running at ${port}`)
-});
+startServer();

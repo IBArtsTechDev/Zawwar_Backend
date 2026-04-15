@@ -36,6 +36,7 @@ import feedbackModel from "../model/feedback.js";
 const db = {};
 
 export default db;
+export { initialize };
 
 await initialize();
 
