@@ -17,6 +17,8 @@ import auth from "../middleware/authToken.js";
  *   post:
  *     summary: Create a guess-the-word game
  *     tags: [GuessTheWord]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/guessTheWords.createGuessWord()`. Expects multipart form-data with up to
  *       four image fields named `image1` to `image4`. `translations` must be a JSON stringified array.
@@ -42,15 +44,12 @@ import auth from "../middleware/authToken.js";
  *   get:
  *     summary: Fetch playable guess-the-word games
  *     tags: [GuessTheWord]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/guessTheWords.playGuessWord()`. Supported `lang` values are `en` and `guj`.
  *       Returns images, answer word, correct image index, and pagination metadata.
  *     parameters:
- *       - in: query
- *         name: userId
- *         required: true
- *         schema:
- *           type: integer
  *       - in: query
  *         name: page
  *         required: false
@@ -78,6 +77,8 @@ import auth from "../middleware/authToken.js";
  *   put:
  *     summary: Update a guess-the-word game
  *     tags: [GuessTheWord]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/guessTheWords.updateGuessWord()`. Expects `gameId` in query string.
  *       Existing images can be updated by passing `image1Id` to `image4Id`; new uploads use the same
@@ -109,6 +110,8 @@ import auth from "../middleware/authToken.js";
  *   delete:
  *     summary: Delete a guess-the-word game
  *     tags: [GuessTheWord]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: gameId
@@ -128,20 +131,20 @@ import auth from "../middleware/authToken.js";
  *                     data:
  *                       $ref: '#/components/schemas/GuessTheWordDeleteResponse'
  */
-router.post("/guess-the-word",/* auth.verifyToken */upload.fields([     
+router.post("/guess-the-word", auth.verifyToken, auth.verifyAdmin, upload.fields([     
     { name: 'image1', maxCount: 1 },
     { name: 'image2', maxCount: 1 },
     { name: 'image3', maxCount: 1 },
     { name: 'image4', maxCount: 1 },
 ]), wordController.createGuessWord);
-router.get("/guess-the-word", /* auth.verifyToken, */wordController.playGuessWord);
-router.put('/guess-the-word', /* auth.verifyToken, */ upload.fields([        
+router.get("/guess-the-word",auth.verifyToken, wordController.playGuessWord);
+router.put('/guess-the-word', auth.verifyToken, auth.verifyAdmin, upload.fields([        
     { name: 'image1', maxCount: 1 },
     { name: 'image2', maxCount: 1 },
     { name: 'image3', maxCount: 1 },
     { name: 'image4', maxCount: 1 },
 ]), wordController.updateGuessWord);
-router.delete('/guess-the-word',/* auth.verifyToken, */ wordController.deleteGuessWord);
+router.delete('/guess-the-word',auth.verifyToken, auth.verifyAdmin, wordController.deleteGuessWord);
 
 /**
  * @swagger
@@ -172,6 +175,6 @@ router.delete('/guess-the-word',/* auth.verifyToken, */ wordController.deleteGue
  *                       items:
  *                         $ref: '#/components/schemas/GuessTheWordRecord'
  */
-router.get('/guess-the-words',/* auth.verifyToken */ wordController.getGuessWord);
+router.get('/guess-the-words',auth.verifyToken, wordController.getGuessWord);
 
-export default router;;
+export default router;

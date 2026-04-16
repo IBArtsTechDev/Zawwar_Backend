@@ -19,6 +19,8 @@ import file_upload from "../utlis/file_upload.js";
  *   get:
  *     summary: Fetch playable word-search games
  *     tags: [WordSearch]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/wordSearch.playWordSearch()`. Supports `en`, `gu`.
  *       The service skips already-correct games for the user, generates a grid and hints from
@@ -50,6 +52,8 @@ import file_upload from "../utlis/file_upload.js";
  *   post:
  *     summary: Create a word-search game with translations
  *     tags: [WordSearch]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/wordSearch.createWordSearch()`. `titles`, `languages`, and
  *       `validWords` must all be arrays of the same length. English is required as the base language.
@@ -74,6 +78,8 @@ import file_upload from "../utlis/file_upload.js";
  *   put:
  *     summary: Update a word-search game and its translations
  *     tags: [WordSearch]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/wordSearch.updateWordSearch()`. Expects `gameId` in query and the same
  *       array-based JSON structure as create. Existing translations are deleted and recreated.
@@ -104,6 +110,8 @@ import file_upload from "../utlis/file_upload.js";
  *   delete:
  *     summary: Delete a word-search game
  *     tags: [WordSearch]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: gameId
@@ -123,10 +131,10 @@ import file_upload from "../utlis/file_upload.js";
  *                     data:
  *                       $ref: '#/components/schemas/WordSearchDeleteResponse'
  */
-router.get('/word-search',wordControler.playWordSearch);
-router.post('/word-search',wordControler.createWordSearch);
-router.put('/word-search',wordControler.updateWordSearch);
-router.delete('/word-search',wordControler.deleteWordSearch);
+router.get('/word-search', auth.verifyToken,wordControler.playWordSearch);
+router.post('/word-search', auth.verifyToken, auth.verifyAdmin, wordControler.createWordSearch);
+router.put('/word-search', auth.verifyToken, auth.verifyAdmin, wordControler.updateWordSearch);
+router.delete('/word-search', auth.verifyToken, auth.verifyAdmin, wordControler.deleteWordSearch);
 
 /**
  * @swagger
@@ -134,6 +142,8 @@ router.delete('/word-search',wordControler.deleteWordSearch);
  *   get:
  *     summary: Fetch all word-search games for admin management
  *     tags: [WordSearch]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/wordSearch.fetchWordSearch()`. Returns all stored word-search games
  *       with grouped translation payloads. The route path keeps the code spelling `word-searchs`.
@@ -152,7 +162,7 @@ router.delete('/word-search',wordControler.deleteWordSearch);
  *                       items:
  *                         $ref: '#/components/schemas/WordSearchAdminItem'
  */
-router.get('/word-searchs',wordControler.fetchWordSearch);
+router.get('/word-searchs',auth.verifyToken, wordControler.fetchWordSearch);
 
 /**
  * @swagger
@@ -160,6 +170,8 @@ router.get('/word-searchs',wordControler.fetchWordSearch);
  *   get:
  *     summary: Fetch word-search mode summary details for a user
  *     tags: [WordSearch]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       This route delegates to `quizController.fetchWordSearchDetails()`, which calls
  *       `services/play/quiz.fetchWordSearchDetails()`. It returns remaining levels and total users.
@@ -189,7 +201,7 @@ router.get('/word-searchs',wordControler.fetchWordSearch);
  *                     data:
  *                       $ref: '#/components/schemas/WordSearchDetailsResponse'
  */
-router.get('/word-search-details',quizController.fetchWordSearchDetails)
+router.get('/word-search-details', auth.verifyToken,quizController.fetchWordSearchDetails)
 
 
 /**
@@ -278,6 +290,8 @@ router.get('/word-search-details',quizController.fetchWordSearchDetails)
  *     summary: Bulk create word-search games with translations
  *     tags:
  *       - WordSearch
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Accepts either a **single entry object** or an **array of entry objects**.
  *       `titles`, `languages`, and `validWords` must all be the same length.
@@ -355,7 +369,7 @@ router.get('/word-search-details',quizController.fetchWordSearchDetails)
  *             schema:
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
-router.post('/bulk-create', wordControler.createBulkWordSearch);
+router.post('/bulk-create',auth.verifyToken, auth.verifyAdmin, wordControler.createBulkWordSearch);
 
 /**
  * @swagger
@@ -363,6 +377,8 @@ router.post('/bulk-create', wordControler.createBulkWordSearch);
  *   post:
  *     summary: Bulk import word-search games from Excel
  *     tags: [WordSearch]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/wordSearch.createWordSearchFromExcel()`. The uploaded spreadsheet
  *       must include the headers `Level`, `Language`, `Title`, and `ValidWords`.
@@ -385,5 +401,6 @@ router.post('/bulk-create', wordControler.createBulkWordSearch);
  *                     data:
  *                       $ref: '#/components/schemas/WordSearchExcelImportResponse'
  */
-router.post('/create',file_upload.single('file'),wordControler.createWordSearchFromExcel)
-export default router;;
+router.post('/create', auth.verifyToken, auth.verifyAdmin, file_upload.single('file'),wordControler.createWordSearchFromExcel)
+
+export default router;

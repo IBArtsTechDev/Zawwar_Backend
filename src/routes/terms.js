@@ -18,6 +18,8 @@ import auth from "../middleware/authToken.js";
  *   get:
  *     summary: Fetch all terms records
  *     tags: [Terms]
+ *     security:
+ *       - bearerAuth: []
  *     description: Calls `termsController.fetchTerms`, which delegates to `services/terms.fetchTerms()` and returns every terms row from `db.terms.findAll()`.
  *     responses:
  *       200:
@@ -34,6 +36,8 @@ import auth from "../middleware/authToken.js";
  *   post:
  *     summary: Create a terms record
  *     tags: [Terms]
+ *     security:
+ *       - bearerAuth: []
  *     description: Calls `services/terms.createTerms()`. The request body must include both `content` and `language`.
  *     requestBody:
  *       required: true
@@ -56,6 +60,8 @@ import auth from "../middleware/authToken.js";
  *   put:
  *     summary: Update terms by language
  *     tags: [Terms]
+ *     security:
+ *       - bearerAuth: []
  *     description: Calls `services/terms.updateTerms()`. The service reads `language` from the query string and `content` from the JSON body.
  *     parameters:
  *       - in: query
@@ -84,9 +90,9 @@ import auth from "../middleware/authToken.js";
  *                     data:
  *                       $ref: '#/components/schemas/TermsRecord'
  */
-router.get('/terms',termsController.fetchTerms);
-router.post("/terms",termsController.createTerms);
-router.put('/terms',termsController.updateTerms)
+router.get('/terms', auth.verifyToken, auth.verifyAdmin, termsController.fetchTerms);
+router.post("/terms", auth.verifyToken, auth.verifyAdmin, termsController.createTerms);
+router.put('/terms', auth.verifyToken, auth.verifyAdmin, termsController.updateTerms)
 
 /**
  * @swagger
@@ -94,6 +100,8 @@ router.put('/terms',termsController.updateTerms)
  *   get:
  *     summary: Fetch terms by language
  *     tags: [Terms]
+ *     security:
+ *       - bearerAuth: []
  *     description: Calls `termsController.fetchTermsById`, which uses `services/terms.fetchTermsById()` and expects `language` in the query string. Despite the message saying "Id", the service actually filters by `language`.
  *     parameters:
  *       - in: query
@@ -116,7 +124,7 @@ router.put('/terms',termsController.updateTerms)
  *                     data:
  *                       $ref: '#/components/schemas/TermsRecord'
  */
-router.get('/term',termsController.fetchTermsById);
+router.get('/term', auth.verifyToken, auth.verifyAdmin, termsController.fetchTermsById);
 
 /**
  * @swagger
@@ -124,12 +132,14 @@ router.get('/term',termsController.fetchTermsById);
  *   delete:
  *     summary: Delete a terms record by id
  *     tags: [Terms]
+ *     security:
+ *       - bearerAuth: []
  *     description: Calls `services/terms.deleteTerms()`. The route path is `/admin/teams` in the current codebase and is documented as-is.
  *     parameters:
  *       - in: query
  *         name: id
  *         required: true
- *         schema:
+ *            schema:
  *           type: integer
  *         example: 1
  *     responses:
@@ -149,6 +159,6 @@ router.get('/term',termsController.fetchTermsById);
  *                           type: string
  *                           example: Terms deleted successfully
  */
-router.delete('/teams',termsController.deleteTerms);
+router.delete('/teams', auth.verifyToken, auth.verifyAdmin, termsController.deleteTerms);
 
 export default router;;

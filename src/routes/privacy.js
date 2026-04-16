@@ -18,6 +18,8 @@ import auth from "../middleware/authToken.js";
  *   get:
  *     summary: Fetch privacy policies, or fetch one privacy policy by language
  *     tags: [Privacy]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       The route file registers two GET handlers on the same `/admin/privacy` path.
  *       The first calls `privacyController.fetchTerms` and returns all rows from
@@ -74,6 +76,8 @@ import auth from "../middleware/authToken.js";
  *   post:
  *     summary: Create a privacy policy record
  *     tags: [Privacy]
+ *     security:
+ *       - bearerAuth: []
  *     description: Calls `services/privacy.createTerms()`. The request body must include both `content` and `language`.
  *     requestBody:
  *       required: true
@@ -96,6 +100,8 @@ import auth from "../middleware/authToken.js";
  *   put:
  *     summary: Update a privacy policy by language
  *     tags: [Privacy]
+ *     security:
+ *       - bearerAuth: []
  *     description: Calls `services/privacy.updateTerms()`. The service reads `language` from the query string and `content` from the JSON body.
  *     parameters:
  *       - in: query
@@ -124,10 +130,10 @@ import auth from "../middleware/authToken.js";
  *                     data:
  *                       $ref: '#/components/schemas/PrivacyRecord'
  */
-router.get('/privacy',termsController.fetchTerms);
-router.get('/privacy',termsController.fetchTermsById);
-router.post("/privacy",termsController.createTerms);
-/* router.delete('/privacy',termsController.deleteTerms); */
-router.put('/privacy',termsController.updateTerms)
+router.get('/privacy', auth.verifyToken, auth.verifyAdmin, termsController.fetchTerms);
+router.get('/privacy', auth.verifyToken, auth.verifyAdmin, termsController.fetchTermsById);
+router.post("/privacy", auth.verifyToken, auth.verifyAdmin, termsController.createTerms);
+/* router.delete('/privacy', auth.verifyToken, auth.verifyAdmin, termsController.deleteTerms); */
+router.put('/privacy', auth.verifyToken, auth.verifyAdmin, termsController.updateTerms)
 
 export default router;;

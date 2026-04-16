@@ -4,6 +4,9 @@ import leaderboard from "../../services/play/leaderboard.js";
 import asyncHandler from "../../middleware/async.js";
 import ErrorResponse from "../../utlis/ErrorResponse.js";
 import db from "../../config/db.js";
+import auth from '../../middleware/authToken.js';
+import jwt from "jsonwebtoken";
+import getEnv from "../../config/envReader.js";
 
 const userLogin = asyncHandler(async(req,res)=>{
     const result = await userControler.login(req.body);
@@ -125,6 +128,51 @@ const uniqueUserName = asyncHandler(async(req,res) => {
 })
 
 
+const createAccessToken = asyncHandler(async(req,res)=>{
+    const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    throw new ErrorResponse('Refresh token is required', 400);
+  }
+
+  const decodesData = jwt.decode(refreshToken, getEnv.JWT_SECRET);
+
+  if (!decodesData || !decodesData.userId) {
+    throw new ErrorResponse('Invalid refresh token', 401);
+  }
+
+  const existingUser = await db.user.findOne({ where: { userId: decodesData.userId } });
+  if (!existingUser) {
+    throw new ErrorResponse('Invalid refresh token', 401);
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, getEnv.JWT_SECRET);
+    const userId = decoded.userId;
+
+    if (userId !== existingUser.userId) {
+      throw new ErrorResponse('Invalid refresh token', 401);
+    }
+
+    const tokenPayload = {
+      userId: existingUser.userId,
+      userName: existingUser.userName,
+      userEmail: existingUser.userEmail,
+      userType: existingUser.userType
+    }
+
+    const newAccessToken = auth.generateAccessToken(tokenPayload);
+    const newRefreshToken = auth.generateRefreshToken(tokenPayload);
+
+    await existingUser.update({ refreshToken: newRefreshToken });
+
+    res.successResponse = new successResponse("Access token generated successfully", 200, { token: newAccessToken, refreshToken: newRefreshToken });
+    
+  } catch (error) {
+    throw new ErrorResponse('Invalid refresh token', 401);
+  }   
+})
+
 export default {
   	getreviewDetails,
   	reviewedGiven,
@@ -145,5 +193,6 @@ export default {
     verifyOTP ,
     deleteUser,
     contactUs,
-    uniqueUserName
+    uniqueUserName,
+    createAccessToken
 };

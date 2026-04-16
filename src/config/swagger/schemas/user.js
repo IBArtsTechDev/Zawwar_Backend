@@ -39,6 +39,46 @@ const userSchemas = {
       }
     }
   },
+  GenerateAccessTokenRequest: {
+    type: "object",
+    required: ["refreshToken"],
+    properties: {
+      refreshToken: {
+        type: "string",
+        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      }
+    }
+  },
+  GenerateAccessTokenResponse: {
+    type: "object",
+    properties: {
+      success: {
+        type: "boolean",
+        example: true
+      },
+      message: {
+        type: "string",
+        example: "Access token generated successfully"
+      },
+      statusCode: {
+        type: "integer",
+        example: 200
+      },
+      data: {
+        type: "object",
+        properties: {
+          accessToken: {
+            type: "string",
+            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          refreshToken: {
+            type: "string",
+            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          }
+        }
+      }
+    }
+  },
   CheckUsernameResponse: {
     type: "object",
     properties: {

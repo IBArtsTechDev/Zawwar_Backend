@@ -3,6 +3,7 @@ const router = express.Router()
 import upload from "../utlis/upload.js";
 import file_upload from "../utlis/file_upload.js";
 import matchcontroler from "../controler/play/match.js";
+import auth from "../middleware/authToken.js";
 
 /**
  * @swagger
@@ -17,6 +18,8 @@ import matchcontroler from "../controler/play/match.js";
  *   post:
  *     summary: Create a match-the-following game with translations
  *     tags: [Match]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/newMatch.createMatch()`. The main language must be `English`.
  *       `left`, `right`, and `translations` are JSON stringified payloads sent in multipart form-data.
@@ -43,6 +46,8 @@ import matchcontroler from "../controler/play/match.js";
  *   get:
  *     summary: Fetch playable match-the-following data
  *     tags: [Match]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/newMatch.playMatch()`. Supported language codes are `en`, `guj`, and `es`.
  *       The service filters out games already answered correctly by the user, localizes the payload,
@@ -86,8 +91,8 @@ import matchcontroler from "../controler/play/match.js";
  *                       items:
  *                         $ref: '#/components/schemas/MatchPlayRecord'
  */
-router.post("/match-the-following", upload.any(),matchcontroler.createMatch);
-router.get("/match-the-following",matchcontroler.playMatch)
+router.post("/match-the-following",auth.verifyToken, auth.verifyAdmin, upload.any(),matchcontroler.createMatch);
+router.get("/match-the-following",auth.verifyToken, matchcontroler.playMatch);
 
 /**
  * @swagger
@@ -95,6 +100,8 @@ router.get("/match-the-following",matchcontroler.playMatch)
  *   get:
  *     summary: Fetch all matches with translation data
  *     tags: [Match]
+ *     security:
+ *       - bearerAuth: []
  *     description: Calls `services/play/newMatch.getAllMatches()`. Returns the base match record plus grouped translations.
  *     responses:
  *       200:
@@ -111,7 +118,7 @@ router.get("/match-the-following",matchcontroler.playMatch)
  *                       items:
  *                         $ref: '#/components/schemas/MatchRecord'
  */
-router.get("/get-match-data",matchcontroler.getMatches)
+router.get("/get-match-data",auth.verifyToken, matchcontroler.getMatches)
 
 /**
  * @swagger
@@ -119,6 +126,8 @@ router.get("/get-match-data",matchcontroler.getMatches)
  *   delete:
  *     summary: Delete a match-the-following game and its translations
  *     tags: [Match]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: gameId
@@ -138,7 +147,7 @@ router.get("/get-match-data",matchcontroler.getMatches)
  *                     data:
  *                       $ref: '#/components/schemas/MatchDeleteResponse'
  */
-router.delete("/match-the-following/:gameId",matchcontroler.deleteMatch)
+router.delete("/match-the-following/:gameId", auth.verifyToken, auth.verifyAdmin, matchcontroler.deleteMatch)
 
 /**
  * @swagger
@@ -146,6 +155,8 @@ router.delete("/match-the-following/:gameId",matchcontroler.deleteMatch)
  *   put:
  *     summary: Update a match-the-following game
  *     tags: [Match]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/newMatch.updateMatch()`. The route path is `match-the-followings`
  *       in the current codebase and is documented as-is. Payload format matches create, including
@@ -179,7 +190,7 @@ router.delete("/match-the-following/:gameId",matchcontroler.deleteMatch)
  *                 data:
  *                   $ref: '#/components/schemas/MatchRecord'
  */
-router.put("/match-the-followings/:gameId",upload.any(),matchcontroler.updateMatch);
+router.put("/match-the-followings/:gameId", auth.verifyToken, auth.verifyAdmin, upload.any(),matchcontroler.updateMatch);
 
 /**
  * @swagger
@@ -187,6 +198,8 @@ router.put("/match-the-followings/:gameId",upload.any(),matchcontroler.updateMat
  *   post:
  *     summary: Bulk upload matches from Excel
  *     tags: [Match]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/newMatch.uploadMatchesFromExcel()`. The required upload field name is `files`.
  *     requestBody:
@@ -208,6 +221,6 @@ router.put("/match-the-followings/:gameId",upload.any(),matchcontroler.updateMat
  *                     data:
  *                       $ref: '#/components/schemas/MatchExcelUploadResponse'
  */
-router.post('/match-the-followings-upload',file_upload.single('files'),matchcontroler.uploadMatchesFromExcel);
+router.post('/match-the-followings-upload', auth.verifyToken, auth.verifyAdmin, file_upload.single('files'), matchcontroler.uploadMatchesFromExcel);
 
 export default router;

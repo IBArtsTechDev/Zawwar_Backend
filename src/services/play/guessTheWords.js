@@ -9,8 +9,8 @@ const baseURL = "http://localhost:9000"
 
 const createGuessWord = asyncHandler(async (body, files) => {
     console.log(body);
-    const { level, word, isGujrati = false, correctImage, translations } = body; // Removed 'correctWord'
-
+    const { level, word, isGujrati = false, correctImage, translations } = body; // Removed 'correctWord'   
+    
     // Validate required fields
     if (!level || typeof isGujrati === 'undefined' || !correctImage) {
         throw new ErrorResponse("level, isGujrati, and correctImage are required", 400); // Updated error message
@@ -30,7 +30,7 @@ const createGuessWord = asyncHandler(async (body, files) => {
     let parsedTranslations = [];
     if (translations) {
         try {
-            parsedTranslations = JSON.parse(translations);
+            parsedTranslations.push(JSON.parse(translations));
             console.log(parsedTranslations, "this is the parsed translation");
              console.log(typeof parsedTranslations);
             if (!Array.isArray(parsedTranslations)) {
@@ -387,8 +387,8 @@ const createJumbledWord = (wordArray, lang,length) => {
 };
 
 
-const playGuessWord = asyncHandler(async (query) => {
-    const { userId, page = 1, limit = 30 } = query;
+const playGuessWord = asyncHandler(async (query,userId) => {
+    const { page = 1, limit = 30 } = query;
 
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);

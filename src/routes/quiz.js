@@ -121,10 +121,10 @@ import auth from "../middleware/authToken.js";
  *                     data:
  *                       $ref: '#/components/schemas/QuizDeleteResponse'
  */
-router.post("/quiz", auth.verifyToken, upload.array('quizImage'), quizController.createQUiz);
-router.get("/quiz",auth.verifyToken,quizController.fetchQuizzes);
-router.put('/quiz',auth.verifyToken,upload.single('quizImage'),quizController.updateQuiz)
-router.delete('/quiz',auth.verifyToken,quizController.deleteQuiz)
+router.post("/quiz", auth.verifyToken, auth.verifyAdmin, upload.array('quizImage'), quizController.createQUiz);
+router.get("/quiz",auth.verifyToken, quizController.fetchQuizzes);
+router.put('/quiz',auth.verifyToken, auth.verifyAdmin, upload.single('quizImage'),quizController.updateQuiz)
+router.delete('/quiz',auth.verifyToken, auth.verifyAdmin,quizController.deleteQuiz)
 
 /**
  * @swagger
@@ -240,9 +240,9 @@ router.delete('/quiz',auth.verifyToken,quizController.deleteQuiz)
  *                       items:
  *                         $ref: '#/components/schemas/QuizQuestionRecord'
  */
-router.post("/question",auth.verifyToken,upload.single('questionImage'),quizController.createQuestion);
-router.put('/question',auth.verifyToken,upload.single('questionImage'),quizController.updateQuestion);
-router.delete('/question',auth.verifyToken,quizController.deleteQuestion);
+router.post("/question",auth.verifyToken, auth.verifyAdmin,  upload.single('questionImage'),quizController.createQuestion);
+router.put('/question',auth.verifyToken, auth.verifyAdmin, upload.single('questionImage'),quizController.updateQuestion);
+router.delete('/question',auth.verifyToken, auth.verifyAdmin, quizController.deleteQuestion);
 router.get('/question',auth.verifyToken,quizController.fetchQuestions);
 
 /**
@@ -378,7 +378,7 @@ router.get("/progress",auth.verifyToken,quizController.saveProgress);
  *                     data:
  *                       $ref: '#/components/schemas/QuizProgressRecord'
  */
-router.post('/option',auth.verifyToken,quizController.useOptions)
+router.post('/option',auth.verifyToken, quizController.useOptions)
 
 /**
  * @swagger
@@ -438,7 +438,7 @@ router.get('/daily-challenge',auth.verifyToken,quizController.dailyChallenge)
  *                     data:
  *                       $ref: '#/components/schemas/QuizAnswerResponse'
  */
-router.post('/answer',auth.verifyToken,quizController.quizAnswer);
+router.post('/answer',auth.verifyToken, quizController.quizAnswer);
 
 
 /**
@@ -447,6 +447,8 @@ router.post('/answer',auth.verifyToken,quizController.quizAnswer);
  *   get:
  *     summary: Fetch admin quiz overview with translations and question counts
  *     tags: [Quiz]
+ *      security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Admin quizzes fetched successfully
@@ -462,7 +464,7 @@ router.post('/answer',auth.verifyToken,quizController.quizAnswer);
  *                       items:
  *                         $ref: '#/components/schemas/QuizAdminSummary'
  */
-router.get('/admin-quiz',quizController.fetchadminQuizzes);
+router.get('/admin-quiz',auth.verifyToken, auth.verifyAdmin,quizController.fetchadminQuizzes);
 
 /**
  * @swagger
@@ -470,6 +472,8 @@ router.get('/admin-quiz',quizController.fetchadminQuizzes);
  *   get:
  *     summary: Fetch admin question details with translations
  *     tags: [Quiz]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: quizId
@@ -491,7 +495,7 @@ router.get('/admin-quiz',quizController.fetchadminQuizzes);
  *                       items:
  *                         $ref: '#/components/schemas/QuizAdminQuestionRecord'
  */
-router.get('/admin-questions',quizController.fetchadminquestions);
+router.get('/admin-questions', auth.verifyToken, auth.verifyAdmin, quizController.fetchadminquestions);
 
 /**
  * @swagger
@@ -499,6 +503,8 @@ router.get('/admin-questions',quizController.fetchadminquestions);
  *   post:
  *     summary: Bulk import quiz questions from an Excel file
  *     tags: [Quiz]
+ *     security:
+ *       - bearerAuth: []
  *     description: Calls `services/play/quiz.createQuestionFromExcel()`. Requires multipart form-data with `quizId` and an Excel-compatible file in the `file` field.
  *     requestBody:
  *       required: true
@@ -519,5 +525,6 @@ router.get('/admin-questions',quizController.fetchadminquestions);
  *                     data:
  *                       $ref: '#/components/schemas/QuizExcelImportResult'
  */
-router.post('/upload-questions',file_upload.single('file'),quizController.createQuestionFromExcel);
-export default router;;
+router.post('/upload-questions',auth.verifyToken, auth.verifyAdmin, file_upload.single('file'),quizController.createQuestionFromExcel);
+
+export default router;

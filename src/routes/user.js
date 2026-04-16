@@ -61,6 +61,41 @@ router.post("/signup",userControler.userSignup);
 
 /**
  * @swagger
+ * /user/generate-access-token:
+ *   post:
+ *     summary: Generate a new access token
+ *     description: Generates a new access token and refresh token using a valid refresh token.
+ *     tags: [User]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/GenerateAccessTokenRequest'
+ *     responses:
+ *       200:
+ *         description: Access token generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/GenerateAccessTokenResponse'
+ *       400:
+ *         description: Refresh token is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiErrorResponse'
+ *       401:
+ *         description: Invalid refresh token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiErrorResponse'
+ */
+router.post('/generate-access-token', userControler.createAccessToken)
+
+/**
+ * @swagger
  * /user/check-username:
  *   post:
  *     summary: Check whether a username is unique
@@ -196,6 +231,8 @@ router.post('/google',userControler.socialLogin)
  *   get:
  *     summary: Fetch leaderboard
  *     tags: [User]
+ *      security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: type
@@ -227,7 +264,7 @@ router.post('/google',userControler.socialLogin)
  *             schema:
  *               $ref: '#/components/schemas/ApiSuccessResponse'
  */
-router.get('/leaderboard',userControler.leaderboards);
+router.get('/leaderboard',auth.verifyToken, userControler.leaderboards);
 
 /**
  * @swagger
@@ -235,6 +272,8 @@ router.get('/leaderboard',userControler.leaderboards);
  *   get:
  *     summary: Fetch user total score
  *     tags: [User]
+ *      security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: userId
@@ -261,8 +300,8 @@ router.get('/leaderboard',userControler.leaderboards);
  *             schema:
  *               $ref: '#/components/schemas/ApiSuccessResponse'
  */
-router.get('/score',userControler.fetchUserScore)
-router.post('/score',userControler.handleScore)
+router.get('/score', auth.verifyToken, userControler.fetchUserScore)
+router.post('/score', auth.verifyToken, userControler.handleScore)
 
 /**
  * @swagger
@@ -298,6 +337,8 @@ router.get('/ads',adsControler.fetchAdsuser);
  *   post:
  *     summary: Verify OTP
  *     tags: [User]
+ *      security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -312,7 +353,7 @@ router.get('/ads',adsControler.fetchAdsuser);
  *             schema:
  *               $ref: '#/components/schemas/ApiSuccessResponse'
  */
-router.post('/verify-otp',userControler.verifyOTP);
+router.post('/verify-otp', auth.verifyToken, userControler.verifyOTP);
 
 /**
  * @swagger
@@ -320,6 +361,8 @@ router.post('/verify-otp',userControler.verifyOTP);
  *   get:
  *     summary: Send forgot password OTP
  *     tags: [User]
+ *      security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: email
@@ -334,7 +377,7 @@ router.post('/verify-otp',userControler.verifyOTP);
  *             schema:
  *               $ref: '#/components/schemas/ApiSuccessResponse'
  */
-router.get('/forgot-password',userControler.forgetUserPassword);
+router.get('/forgot-password', auth.verifyToken, userControler.forgetUserPassword);
 
 /**
  * @swagger
@@ -342,6 +385,8 @@ router.get('/forgot-password',userControler.forgetUserPassword);
  *   post:
  *     summary: Change password using OTP
  *     tags: [User]
+ *      security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -356,8 +401,8 @@ router.get('/forgot-password',userControler.forgetUserPassword);
  *             schema:
  *               $ref: '#/components/schemas/ApiSuccessResponse'
  */
-router.post('/change-password',userControler.changePassword)
-router.delete('/profile',auth.verifyToken,userControler.deleteUser)
+router.post('/change-password', auth.verifyToken, userControler.changePassword)
+router.delete('/profile', auth.verifyToken, userControler.deleteUser)
 
 /**
  * @swagger
@@ -365,6 +410,8 @@ router.delete('/profile',auth.verifyToken,userControler.deleteUser)
  *   post:
  *     summary: Submit contact-us form
  *     tags: [User]
+ *      security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -379,7 +426,7 @@ router.delete('/profile',auth.verifyToken,userControler.deleteUser)
  *             schema:
  *               $ref: '#/components/schemas/ApiSuccessResponse'
  */
-router.post('/contact-us',userControler.contactUs);
+router.post('/contact-us', auth.verifyToken, userControler.contactUs);
 
 /**
  * @swagger
@@ -387,6 +434,8 @@ router.post('/contact-us',userControler.contactUs);
  *   get:
  *     summary: Fetch user correct questions
  *     tags: [User]
+ *      security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: userId
@@ -401,7 +450,7 @@ router.post('/contact-us',userControler.contactUs);
  *             schema:
  *               $ref: '#/components/schemas/ApiSuccessResponse'
  */
-router.get('/users-correct-questiions',userControler.fetchUserCorrectQuestions);
+router.get('/users-correct-questiions', auth.verifyToken, userControler.fetchUserCorrectQuestions);
 
 /**
  * @swagger
@@ -409,6 +458,8 @@ router.get('/users-correct-questiions',userControler.fetchUserCorrectQuestions);
  *   post:
  *     summary: Create user feedback
  *     tags: [User]
+ *      security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -423,7 +474,7 @@ router.get('/users-correct-questiions',userControler.fetchUserCorrectQuestions);
  *             schema:
  *               $ref: '#/components/schemas/ApiSuccessResponse'
  */
-router.post('/feedback',feedbackControler.createFeedback)
+router.post('/feedback', auth.verifyToken, feedbackControler.createFeedback)
 
 /**
  * @swagger
@@ -431,6 +482,8 @@ router.post('/feedback',feedbackControler.createFeedback)
  *   get:
  *     summary: Fetch guess-the-image details
  *     tags: [User]
+ *      security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: userId
@@ -451,7 +504,7 @@ router.post('/feedback',feedbackControler.createFeedback)
  *             schema:
  *               $ref: '#/components/schemas/ApiSuccessResponse'
  */
-router.get('/guess-the-image-details',userControler.fetchGuessTheImageDetails)
+router.get('/guess-the-image-details', auth.verifyToken, userControler.fetchGuessTheImageDetails)
 
 /**
  * @swagger
@@ -481,6 +534,8 @@ router.post('/apple-login',userControler.appleLogin)
  *   get:
  *     summary: Fetch latest weekly winner
  *     tags: [User]
+ *      security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Weekly winner fetched successfully
@@ -489,7 +544,7 @@ router.post('/apple-login',userControler.appleLogin)
  *             schema:
  *               $ref: '#/components/schemas/ApiSuccessResponse'
  */
-router.get('/weekly-winner',userControler.fetchWeeklyWinner)
+router.get('/weekly-winner', auth.verifyToken,userControler.fetchWeeklyWinner)
 
 /**
  * @swagger
@@ -497,6 +552,8 @@ router.get('/weekly-winner',userControler.fetchWeeklyWinner)
  *   get:
  *     summary: Fetch last six weekly winners
  *     tags: [User]
+ *      security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Last six weekly winners fetched successfully
@@ -505,7 +562,7 @@ router.get('/weekly-winner',userControler.fetchWeeklyWinner)
  *             schema:
  *               $ref: '#/components/schemas/ApiSuccessResponse'
  */
-router.get('/lastsixweekwinner',userControler.fetchLastSixWeeklyWinners);
+router.get('/lastsixweekwinner', auth.verifyToken, userControler.fetchLastSixWeeklyWinners);
 
 /**
  * @swagger

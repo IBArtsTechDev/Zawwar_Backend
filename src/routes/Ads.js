@@ -17,6 +17,8 @@ import auth from "../middleware/authToken.js";
  *   get:
  *     summary: Fetch ads by type and optional language
  *     tags: [Ads]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: type
@@ -45,36 +47,11 @@ import auth from "../middleware/authToken.js";
  *                       type: array
  *                       items:
  *                         $ref: '#/components/schemas/AdsRecord'
- *   post:
- *     summary: Create a new ad
- *     tags: [Ads]
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             $ref: '#/components/schemas/AdsCreateRequest'
- *     responses:
- *       200:
- *         description: Ad created successfully
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/ApiSuccessResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         success:
- *                           type: boolean
- *                           example: true
- *                         data:
- *                           $ref: '#/components/schemas/AdsRecord'
  *   put:
  *     summary: Update an existing ad
  *     tags: [Ads]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: adsId
@@ -102,6 +79,8 @@ import auth from "../middleware/authToken.js";
  *   delete:
  *     summary: Delete an ad
  *     tags: [Ads]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: adsId
@@ -122,12 +101,47 @@ import auth from "../middleware/authToken.js";
  *                       nullable: true
  *                       example: null
  */
-router.get('/ads',adsControler.fetchAds);
-router.post('/ads/clicked',adsControler.handlwAdsCLicked);
-router.post('/ads',upload.single('file'),adsControler.createAds);
-router.put('/ads',upload.single('file'),adsControler.updateAds);
-router.delete('/ads',adsControler.deleteAds)
+router.get('/ads',auth.verifyToken, auth.verifyAdmin, adsControler.fetchAds);
+router.post('/ads', auth.verifyToken, auth.verifyAdmin, upload.single('file'),adsControler.createAds);
+router.put('/ads', auth.verifyToken, auth.verifyAdmin, upload.single('file'),adsControler.updateAds);
+router.delete('/ads', auth.verifyToken, auth.verifyAdmin, adsControler.deleteAds)
 
+
+
+/**
+ * @swagger
+ * /admin/ads/clicked:
+ *   post:
+ *     summary: Create a new ad
+ *     tags: [Ads]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/AdsCreateRequest'
+ *     responses:
+ *       200:
+ *         description: Ad created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiSuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         success:
+ *                           type: boolean
+ *                           example: true
+ *                         data:
+ *                           $ref: '#/components/schemas/AdsRecord' 
+*/
+router.post('/ads/clicked', auth.verifyToken, auth.verifyAdmin, adsControler.handlwAdsCLicked);
 /**
  * @swagger
  * /admin/ads/clicked:
@@ -167,6 +181,8 @@ router.delete('/ads',adsControler.deleteAds)
  *   put:
  *     summary: Update ad active status
  *     tags: [Ads]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: adsId
@@ -192,6 +208,6 @@ router.delete('/ads',adsControler.deleteAds)
  *                       type: array
  *                       example: []
  */
-router.put('/ads-status',adsControler.updateAdsStatus)
+router.put('/ads-status', auth.verifyToken, auth.verifyAdmin, adsControler.updateAdsStatus)
 
 export default router;;

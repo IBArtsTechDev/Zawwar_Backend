@@ -22,8 +22,9 @@ const  getGuessWord = asyncHandler(async(req,res)=>{
     res.successResponse = new successResponse("fetch guss the word",200,result)
 })
 
-const playGuessWord = asyncHandler(async(req,res)=>{    
-    const result = await wordservice.playGuessWord(req.query);
+const playGuessWord = asyncHandler(async(req,res)=>{ 
+    const userId = req.user.userId;   
+    const result = await wordservice.playGuessWord(req.query,userId);
     res.successResponse = new successResponse("play guess the word",200,result)
 })
 

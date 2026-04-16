@@ -15,7 +15,7 @@ const generateAccessToken = (payload) => {
 
 const generateRefreshToken = (payload) => {
   return jwt.sign(payload, getEnv.JWT_SECRET, {
-    expiresIn: '60d',
+    expiresIn: '30d',
   });
 };
 
@@ -46,6 +46,12 @@ const verifyToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, getEnv.JWT_SECRET); 
   
+    if(!decoded || !decoded.userId) { 
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token payload",
+      });
+    }
     
     req.user = decoded;
     next();
@@ -57,8 +63,23 @@ const verifyToken = (req, res, next) => {
   }
 };
 
+
+const verifyAdmin = (req, res, next) => {
+  if (req.user && req.user.userType === 'admin') {
+    next();
+  } else {
+    return res.status(403).json({
+      success: false,
+      message: "Admin access required",
+    });
+  }
+}
+
+
+
 export default {
   generateAccessToken,
   generateRefreshToken,
   verifyToken,
-};;
+  verifyAdmin
+};

@@ -18,6 +18,8 @@ import file_upload from "../utlis/file_upload.js";
  *   post:
  *     summary: Create a guess-the-image game
  *     tags: [GuessTheImage]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/guessTheImage.createWord()`. Expects multipart form-data.
  *       `translations` must be a JSON stringified array, and the main image upload field is `mainImage`.
@@ -81,6 +83,8 @@ import file_upload from "../utlis/file_upload.js";
  *   put:
  *     summary: Update a guess-the-image game
  *     tags: [GuessTheImage]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/guessTheImage.updateWord()`. The service identifies the existing game
  *       by `level` plus `isGujrati`, not by `gameId`. Expects multipart form-data with optional `mainImage`.
@@ -126,10 +130,10 @@ import file_upload from "../utlis/file_upload.js";
  *                     data:
  *                       $ref: '#/components/schemas/GuessTheImageDeleteResponse'
  */
-router.post("/guess-the-image", upload.any(),wordControler.createWord);
-router.get("/guess-the-image",auth.verifyToken,wordControler.playWord);
-router.put('/guess-the-image',upload.any(),wordControler.updateWord);
-router.delete('/guess-the-image',auth.verifyToken,wordControler.deleteWord);
+router.post("/guess-the-image", auth.verifyToken, auth.verifyAdmin, upload.any(),wordControler.createWord);
+router.get("/guess-the-image",auth.verifyToken, wordControler.playWord);
+router.put('/guess-the-image',auth.verifyToken, auth.verifyAdmin,upload.any(),wordControler.updateWord);
+router.delete('/guess-the-image',auth.verifyToken, auth.verifyAdmin,wordControler.deleteWord);
 
 /**
  * @swagger
@@ -163,6 +167,8 @@ router.get('/guess-the-images',auth.verifyToken,wordControler.fetchWords);
  *   post:
  *     summary: Bulk create guess-the-image games from Excel
  *     tags: [GuessTheImage]
+ *     security:
+ *       - bearerAuth: []
  *     description: >
  *       Calls `services/play/guessTheImage.createGamesFromExcel()`. The required upload field is `file`.
  *       The spreadsheet may include `level`, `word`, `time`, and `translations` columns.
@@ -187,7 +193,7 @@ router.get('/guess-the-images',auth.verifyToken,wordControler.fetchWords);
  *                       items:
  *                         $ref: '#/components/schemas/GuessTheImageRecord'
  */
-router.post('/excel-upload',file_upload.single('file'),wordControler.createGamesFromExcel)
+router.post('/excel-upload', auth.verifyToken, auth.verifyAdmin, file_upload.single('file'),wordControler.createGamesFromExcel)
 
 
 export default router;;                 

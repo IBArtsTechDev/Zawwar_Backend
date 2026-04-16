@@ -115,6 +115,7 @@ const login = asyncHandler(async (body) => {
   
       return {
       token,
+      refreshToken,
       userId: user.userId,
       userName: user.userName,
       userEmail: user.userEmail,
@@ -257,6 +258,7 @@ const socialLogin = asyncHandler(async (body, fcmToken) => {
 
    return {
      token,
+     refreshToken,
      formatData
    };
  } else {
@@ -297,6 +299,7 @@ const socialLogin = asyncHandler(async (body, fcmToken) => {
 
    return {
      token,
+     refreshToken,
      userId: existing_user.userId,
      userName: existing_user.userName,
      userEmail: existing_user.userEmail,
@@ -593,7 +596,7 @@ const appleLogin = asyncHandler(async (body) => {
     });
 
     try {
-      await sendWelcomeEmail(userName, email);
+      await sendWelcomeMail(userName, email);
       logger.info('Welcome email sent successfully');
     } catch (error) {
       logger.error('Error sending welcome email:', error);
@@ -613,6 +616,7 @@ const appleLogin = asyncHandler(async (body) => {
 
     return {
       token,
+      refreshToken,
       ...userData,
     };
   } else {
@@ -640,6 +644,7 @@ const appleLogin = asyncHandler(async (body) => {
 
     return {
       token,
+      refreshToken,
       userId: existing_user.userId,
       userName: existing_user.userName,
       userEmail: existing_user.userEmail,
@@ -695,7 +700,6 @@ const getreviewDetails = asyncHandler(async (query) => {
     isReviewed: true,
   };
 });
-
 
 
 export default {

@@ -119,10 +119,10 @@ import auth from "../middleware/authToken.js";
  *                       items:
  *                         $ref: '#/components/schemas/AdminUser'
  */
-router.post('/user',auth.verifyToken,adminControler.createUser);
-router.put('/user',auth.verifyToken,adminControler.updateUser);
-router.delete('/user',auth.verifyToken,adminControler.deleteUser);
-router.get('/user',auth.verifyToken,adminControler.fetchUser);
+router.post('/user',auth.verifyToken, auth.verifyAdmin, adminControler.createUser);
+router.put('/user',auth.verifyToken, auth.verifyAdmin, adminControler.updateUser);
+router.delete('/user',auth.verifyToken, auth.verifyAdmin, adminControler.deleteUser);
+router.get('/user',auth.verifyToken, auth.verifyAdmin, adminControler.fetchUser);
 
 /**
  * @swagger
@@ -145,7 +145,7 @@ router.get('/user',auth.verifyToken,adminControler.fetchUser);
  *                     data:
  *                       $ref: '#/components/schemas/AdminDashboardMetrics'
  */
-router.get('/dashboard',auth.verifyToken,adminControler.dashboardMatrics)
+router.get('/dashboard',auth.verifyToken, auth.verifyAdmin, adminControler.dashboardMatrics)
 
 /**
  * @swagger
@@ -153,6 +153,8 @@ router.get('/dashboard',auth.verifyToken,adminControler.dashboardMatrics)
  *   get:
  *     summary: Fetch monthly user signup chart data for a year
  *     tags: [Admin]
+ *      security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: year
@@ -173,7 +175,7 @@ router.get('/dashboard',auth.verifyToken,adminControler.dashboardMatrics)
  *                     data:
  *                       $ref: '#/components/schemas/AdminChartData'
  */
-router.get('/chart-data',adminControler.chartData)
+router.get('/chart-data', auth.verifyAdmin, auth.verifyAdmin, adminControler.chartData)
 
 /**
  * @swagger
@@ -181,6 +183,8 @@ router.get('/chart-data',adminControler.chartData)
  *   get:
  *     summary: Fetch top 5 most played quizzes
  *     tags: [Admin]
+ *      security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Most played quiz data fetched successfully
@@ -194,7 +198,7 @@ router.get('/chart-data',adminControler.chartData)
  *                     data:
  *                       $ref: '#/components/schemas/AdminMostPlayedQuizData'
  */
-router.get('/most-played-quiz',adminControler.mostPlayedQuiz);
+router.get('/most-played-quiz',auth.verifyAdmin, auth.verifyAdmin, adminControler.mostPlayedQuiz);
 
 /**
  * @swagger
@@ -202,6 +206,10 @@ router.get('/most-played-quiz',adminControler.mostPlayedQuiz);
  *   get:
  *     summary: Fetch gameplay statistics grouped by game category
  *     tags: [Admin]
+ *      security:
+ *       - bearerAuth: []
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Game statistics fetched successfully
@@ -215,7 +223,7 @@ router.get('/most-played-quiz',adminControler.mostPlayedQuiz);
  *                     data:
  *                       $ref: '#/components/schemas/AdminGameStatistics'
  */
-router.get('/game-stats',adminControler.getGamePlayStatistics);
+router.get('/game-stats', auth.verifyAdmin, auth.verifyAdmin,adminControler.getGamePlayStatistics);
 
 /**
  * @swagger
@@ -223,6 +231,10 @@ router.get('/game-stats',adminControler.getGamePlayStatistics);
  *   get:
  *     summary: Fetch top 10 users by total points
  *     tags: [Admin]
+ *      security:
+ *       - bearerAuth: []
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Leaderboard fetched successfully
@@ -238,7 +250,7 @@ router.get('/game-stats',adminControler.getGamePlayStatistics);
  *                       items:
  *                         $ref: '#/components/schemas/AdminLeaderboardEntry'
  */
-router.get('/leaderboard',adminControler.leaderboard)
+router.get('/leaderboard',auth.verifyAdmin, auth.verifyAdmin, adminControler.leaderboard)
 
 /**
  * @swagger
@@ -246,6 +258,8 @@ router.get('/leaderboard',adminControler.leaderboard)
  *   post:
  *     summary: Send a push notification to all users with valid FCM tokens
  *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -266,7 +280,7 @@ router.get('/leaderboard',adminControler.leaderboard)
  *                       type: array
  *                       example: []
  */
-router.post('/notifiation',adminControler.sendNotificationAll)
+router.post('/notifiation', auth.verifyAdmin, auth.verifyAdmin,adminControler.sendNotificationAll)
 
 /**
  * @swagger
@@ -274,6 +288,8 @@ router.post('/notifiation',adminControler.sendNotificationAll)
  *   get:
  *     summary: Fetch app version by platform
  *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: type
@@ -299,6 +315,8 @@ router.post('/notifiation',adminControler.sendNotificationAll)
  *   post:
  *     summary: Create or update app version by platform
  *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -327,6 +345,8 @@ router.post('/version',adminControler.version)
  *   get:
  *     summary: Fetch all user feedback entries
  *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Feedback fetched successfully
@@ -344,6 +364,8 @@ router.post('/version',adminControler.version)
  *   delete:
  *     summary: Delete a feedback record
  *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: feedbackId
@@ -364,8 +386,8 @@ router.post('/version',adminControler.version)
  *                       type: array
  *                       example: []
  */
-router.get('/feedback',feedbackControler.fetchFeedback);
-router.delete('/feedback',feedbackControler.deleteFeedback)
+router.get('/feedback', auth.verifyAdmin, auth.verifyAdmin,feedbackControler.fetchFeedback);
+router.delete('/feedback', auth.verifyAdmin, auth.verifyAdmin,feedbackControler.deleteFeedback)
 
 
 export default router;;
