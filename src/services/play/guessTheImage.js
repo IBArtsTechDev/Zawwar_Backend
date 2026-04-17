@@ -130,8 +130,8 @@ const updateWord = asyncHandler(async (body, files) => {
 });
 
 
-const playWord = asyncHandler(async (query) => {
-    const { userId, page = 1, limit = 30 } = query;
+const playWord = asyncHandler(async (query, userId) => {
+    const { page = 1, limit = 30, startLevel, endLevel } = query;
     const pageSize = parseInt(limit, 10);
     const currentPage = parseInt(page, 10);
     const offset = (currentPage - 1) * pageSize;
@@ -152,16 +152,33 @@ const playWord = asyncHandler(async (query) => {
 
         const excludeIds = answeredQuestionIds.length > 0 ? answeredQuestionIds : [0];
 
+        const whereClause = {};
+
+        // Apply level filter only if provided
+        if (startLevel && endLevel) {
+            whereClause.level = {
+            [Op.between]: [parseInt(startLevel), parseInt(endLevel)],
+            };
+        } else if (startLevel) {
+            whereClause.level = {
+            [Op.gte]: parseInt(startLevel),
+            };
+        } else if (endLevel) {
+            whereClause.level = {
+            [Op.lte]: parseInt(endLevel),
+            };
+        }
+
         // Total count excluding answered
         const totalQuestions = await db.guessWord.count({
-            where: { gameId: { [Op.notIn]: excludeIds } },
+            where: { ...whereClause, gameId: { [Op.notIn]: excludeIds } },
             transaction
         });
 
         // Fetch paginated words
         const words = await db.guessWord.findAll({
             attributes: ['gameId', 'gameImage', 'level', 'word'],
-            where: { gameId: { [Op.notIn]: excludeIds } },
+            where: { ...whereClause, gameId: { [Op.notIn]: excludeIds } },
             limit: pageSize,
             offset,
             transaction,
@@ -273,7 +290,9 @@ const playWord = asyncHandler(async (query) => {
 
         await transaction.commit();
 
+        const baseUrl = `${process.env.DEV_URL}/uploads/`; // Replace with your actual base URL
         return {
+            baseUrl,
             totalQuestions,
             totalPages: Math.ceil(totalQuestions / pageSize),
             currentPage,

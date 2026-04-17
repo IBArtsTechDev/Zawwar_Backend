@@ -52,8 +52,13 @@ import file_upload from "../utlis/file_upload.js";
  *       and records a play activity.
  *     parameters:
  *       - in: query
- *         name: userId
- *         required: true
+ *         name: startLevel
+ *         required: false
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: endLevel
+ *         required: false
  *         schema:
  *           type: integer
  *       - in: query

@@ -388,7 +388,7 @@ const createJumbledWord = (wordArray, lang,length) => {
 
 
 const playGuessWord = asyncHandler(async (query,userId) => {
-    const { page = 1, limit = 30 } = query;
+    const { page = 1, limit = 30, startLevel, endLevel } = query;
 
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
@@ -405,15 +405,33 @@ const playGuessWord = asyncHandler(async (query,userId) => {
     });
     const answeredQuestionIds = answeredQuestions.map(answer => answer.gameId);
 
+
+
+  const whereClause = {};
+
+  // Apply level filter only if provided
+  if (startLevel && endLevel) {
+    whereClause.level = {
+      [Op.between]: [parseInt(startLevel), parseInt(endLevel)],
+    };
+  } else if (startLevel) {
+    whereClause.level = {
+      [Op.gte]: parseInt(startLevel),
+    };
+  } else if (endLevel) {
+    whereClause.level = {
+      [Op.lte]: parseInt(endLevel),
+    };
+  }
     // Count total available questions excluding answered ones
     const totalQuestions = await db.guessthewords.count({
-        where: { gameId: { [Op.notIn]: answeredQuestionIds } }
+        where: { ...whereClause, gameId: { [Op.notIn]: answeredQuestionIds } }
     });
 
     // Fetch words to be played
     const words = await db.guessthewords.findAll({
         attributes: ['gameId', 'level', 'word', 'correct_Image'],
-        where: { gameId: { [Op.notIn]: answeredQuestionIds } },
+        where: {...whereClause, gameId: { [Op.notIn]: answeredQuestionIds } },
         limit: limitNum,
         offset: (pageNum - 1) * limitNum
     });

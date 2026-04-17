@@ -4,6 +4,8 @@ import db from "../../config/db.js";
 import Sequelize from "sequelize";
 import XLSX from "xlsx";
 import fs from "fs";
+import {Op} from "sequelize";
+
 const matraData = ['ુ', 'ા', '', 'ી', 'ે', 'ૈ', 'ો', '','્'];
 
 const processGujaratiText = (text) => {
@@ -323,8 +325,8 @@ const deleteWordSearch = asyncHandler(async (query) => {
     };
 });
 
-const playWordSearch = asyncHandler(async (query) => {
-  const { page = 1, userId } = query;
+const playWordSearch = asyncHandler(async (query, userId) => {
+  const { page = 1 , startLevel, endLevel } = query;
   const pageSize = 10;
   const pageNum = parseInt(page, 10) || 1;
   const offset   = (pageNum - 1) * pageSize;
@@ -338,16 +340,37 @@ const playWordSearch = asyncHandler(async (query) => {
   });
   const answeredSet = new Set(answeredRows.map((r) => r.gameId));
 
+
+  const whereClause = {};
+
+  // Apply level filter only if provided
+  if (startLevel && endLevel) {
+    whereClause.level = {
+      [Op.between]: [parseInt(startLevel), parseInt(endLevel)],
+    };
+  } else if (startLevel) {
+    whereClause.level = {
+      [Op.gte]: parseInt(startLevel),
+    };
+  } else if (endLevel) {
+    whereClause.level = {
+      [Op.lte]: parseInt(endLevel),
+    };
+  }
   // ── 2. Pagination meta ──────────────────────────────────────────────────
-  const totalSearches = await db.Search.count();
+  const totalSearches = await db.Search.count({
+    where: whereClause,
+  });
   const totalPages    = Math.ceil(totalSearches / pageSize);
+
 
   // ── 3. Fetch base (English) records — only columns we actually need ─────
   const baseSearches = await db.Search.findAll({
     attributes: ['gameId', 'level', 'title', 'validWords', 'total_plays', 'language'],
-    order:      [['level', 'ASC']],
+    where: whereClause,  
+    order: [['level', 'ASC']],
     offset,
-    limit:      pageSize,
+    limit: pageSize,
   });
 
   if (!baseSearches.length) {
@@ -487,7 +510,9 @@ function calculateGridSize(words) {
 
 
 
-const fetchWordSearch = asyncHandler(async () => {
+const fetchWordSearch = asyncHandler(async (query) => {
+
+  const { startLevel, endLevel } = query;
     try {
         const safeParse = (value) => {
             if (Array.isArray(value)) return value;
@@ -498,9 +523,30 @@ const fetchWordSearch = asyncHandler(async () => {
                 return typeof value === 'string' ? value.split(',') : [];
             }
         };
+
+
+    const whereClause = {};
+
+    // Apply level filter only if provided
+    if (startLevel && endLevel) {
+      whereClause.level = {
+        [Op.between]: [parseInt(startLevel), parseInt(endLevel)],
+      };
+    } else if (startLevel) {
+      whereClause.level = {
+        [Op.gte]: parseInt(startLevel),
+      };
+    } else if (endLevel) {
+      whereClause.level = {
+        [Op.lte]: parseInt(endLevel),
+      };
+    }
+    
         const wordSearches = await db.Search.findAll({
             order: [['level', 'ASC']],
+            where: whereClause,
         });
+
         const availableWordSearches = await Promise.all(wordSearches.map(async (search) => {
             // Parse valid words from the search
             const validWords = safeParse(search.validWords);    

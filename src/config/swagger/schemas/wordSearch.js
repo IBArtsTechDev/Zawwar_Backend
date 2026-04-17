@@ -79,7 +79,7 @@ const wordSearchSchemas = {
         items: {
           type: "string"
         },
-        example: ["English", "Spanish"]
+        example: ["English", "Gujarati"]
       },
       validWords: {
         type: "array",
@@ -89,7 +89,7 @@ const wordSearchSchemas = {
             type: "string"
           }
         },
-        example: [["CAT", "DOG", "LION"], ["GATO", "PERRO", "LEON"]]
+        example: [["CAT", "DOG", "LION"], ["બિલાડી", "કૂતરો", "સિંહ"]]
       },
       isGujrati: {
         oneOf: [
@@ -114,7 +114,7 @@ const wordSearchSchemas = {
           properties: {
             language: {
               type: "string",
-              example: "Spanish"
+              example: "Gujarati"
             },
             title: {
               type: "string",
@@ -125,7 +125,7 @@ const wordSearchSchemas = {
               items: {
                 type: "string"
               },
-              example: ["GATO", "PERRO", "LEON"]
+              example: ["બિલાડી", "કૂતરો", "સિંહ"]
             }
           }
         }

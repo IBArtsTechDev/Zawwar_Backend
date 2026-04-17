@@ -18,7 +18,8 @@ const deleteWordSearch = asyncHandler(async (req, res, next) => {
 });
 
 const playWordSearch = asyncHandler(async (req, res, next) => {
-    const result = await wordController.playWordSearch(req.query);
+    const userId = req.user.userId;
+    const result = await wordController.playWordSearch(req.query,userId);
     res.successResponse = new successResponse("Game fetched successfully", 200, result);
 });
 

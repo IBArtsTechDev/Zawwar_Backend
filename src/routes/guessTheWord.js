@@ -62,6 +62,16 @@ import auth from "../middleware/authToken.js";
  *         schema:
  *           type: integer
  *           default: 30
+ *       - in: query
+ *         name: startLevel
+ *         required: false
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: endLevel
+ *         required: false
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: Guess-the-word gameplay fetched successfully
@@ -148,18 +158,11 @@ router.delete('/guess-the-word',auth.verifyToken, auth.verifyAdmin, wordControll
 
 /**
  * @swagger
- * /play/guess-the-words:
+ * /play/guess/guess-the-words:
  *   get:
  *     summary: Fetch all guess-the-word games with translations and images
  *     tags: [GuessTheWord]
  *     description: Calls `services/play/guessTheWords.fetchGuessWord()`. Optional `lang` filter supports `en` and `guj`.
- *     parameters:
- *       - in: query
- *         name: lang
- *         required: false
- *         schema:
- *           type: string
- *           enum: [en, guj]
  *     responses:
  *       200:
  *         description: Guess-the-word games fetched successfully

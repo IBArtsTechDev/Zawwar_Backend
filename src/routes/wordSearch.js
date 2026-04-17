@@ -33,8 +33,13 @@ import file_upload from "../utlis/file_upload.js";
  *           type: integer
  *           default: 1
  *       - in: query
- *         name: userId
- *         required: true
+ *         name: startLevel
+ *         required: false
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: endLevel
+ *         required: false
  *         schema:
  *           type: integer
  *     responses:
@@ -144,6 +149,17 @@ router.delete('/word-search', auth.verifyToken, auth.verifyAdmin, wordControler.
  *     tags: [WordSearch]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startLevel
+ *         required: false
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: endLevel
+ *         required: false
+ *         schema:
+ *           type: integer
  *     description: >
  *       Calls `services/play/wordSearch.fetchWordSearch()`. Returns all stored word-search games
  *       with grouped translation payloads. The route path keeps the code spelling `word-searchs`.

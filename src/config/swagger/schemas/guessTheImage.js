@@ -94,7 +94,7 @@ const guessTheImageSchemas = {
       translations: {
         type: "string",
         description: "JSON stringified array of translation objects.",
-        example: "[{\"language\":\"Gujarati\",\"word\":\"બિલાડી\"},{\"language\":\"Spanish\",\"word\":\"GATO\"}]"
+        example: "[{\"language\":\"Gujarati\",\"word\":\"બિલાડી\"}]"
       },
       mainImage: {
         type: "string",
@@ -140,7 +140,7 @@ const guessTheImageSchemas = {
       translations: {
         type: "string",
         description: "JSON stringified array of translation objects.",
-        example: "[{\"language\":\"Gujarati\",\"word\":\"કૂતરો\"},{\"language\":\"Spanish\",\"word\":\"PERRO\"}]"
+        example: "[{\"language\":\"Gujarati\",\"word\":\"કૂતરો\"}]"
       },
       mainImage: {
         type: "string",

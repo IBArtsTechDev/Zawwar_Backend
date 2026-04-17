@@ -6,5 +6,4 @@ logs
 ./logs/app.log
 ./logs/error.log
 uploads
-.codex
 postman

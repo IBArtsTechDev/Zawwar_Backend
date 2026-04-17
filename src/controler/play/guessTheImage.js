@@ -9,7 +9,8 @@ const createWord = asyncHandler(async(req,res)=>{
 });
 
 const playWord = asyncHandler(async(req,res)=>{
-    const result = await guessTheImage.playWord(req.query);
+    const userId = req.user.userId;
+    const result = await guessTheImage.playWord(req.query, userId);
     res.successResponse = new successResponse("Game fetched successfully",200,result)
 });
 
